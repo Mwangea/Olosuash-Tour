@@ -1,6 +1,8 @@
 const { AppError } = require("../middleware/errorHandler");
 const userModel = require("../models/userModel");
 const authService = require('../services/authService');
+const fs = require('fs');
+const path = require('path');
 
 /**
  * @desc    Create admin account
@@ -56,6 +58,158 @@ const createAdmin = async (req, res, next) => {
   }
 };
 
+/**
+ * @desc    Get all users
+ * @route   GET /api/admin/users
+ * @access  Admin
+ */
+const getAllUsers = async (req, res, next) => {
+  try {
+    const [rows] = await userModel.getAllUsers();
+    
+    res.status(200).json({
+      status: 'success',
+      results: rows.length,
+      data: {
+        users: rows
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get user by ID
+ * @route   GET /api/admin/users/:id
+ * @access  Admin
+ */
+const getUserById = async (req, res, next) => {
+  try {
+    const userId = req.params.id;
+    const user = await userModel.findById(userId);
+    
+    if (!user) {
+      return next(new AppError(`No user found with ID: ${userId}`, 404));
+    }
+    
+    res.status(200).json({
+      status: 'success',
+      data: {
+        user
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Update user
+ * @route   PATCH /api/admin/users/:id
+ * @access  Admin
+ */
+const updateUser = async (req, res, next) => {
+  try {
+    const userId = req.params.id;
+    
+    // Check if user exists
+    const userExists = await userModel.findById(userId);
+    if (!userExists) {
+      return next(new AppError(`No user found with ID: ${userId}`, 404));
+    }
+    
+    // Handle profile picture upload
+    const userData = { ...req.body };
+    if (req.file) {
+      // Delete old profile picture if it exists
+      if (userExists.profile_picture) {
+        const oldPicturePath = path.join(__dirname, '..', userExists.profile_picture);
+        if (fs.existsSync(oldPicturePath)) {
+          fs.unlinkSync(oldPicturePath);
+        }
+      }
+      
+      // Set the new profile picture path
+      userData.profile_picture = `/uploads/profile-pictures/${req.file.filename}`;
+    }
+    
+    // Update user
+    const updatedUser = await userModel.updateUserByAdmin(userId, userData);
+    
+    res.status(200).json({
+      status: 'success',
+      data: {
+        user: updatedUser
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Delete user
+ * @route   DELETE /api/admin/users/:id
+ * @access  Admin
+ */
+const deleteUser = async (req, res, next) => {
+  try {
+    const userId = req.params.id;
+    
+    // Check if user exists
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return next(new AppError(`No user found with ID: ${userId}`, 404));
+    }
+    
+    // Delete user's profile picture if exists
+    if (user.profile_picture) {
+      const picturePath = path.join(__dirname, '..', user.profile_picture);
+      if (fs.existsSync(picturePath)) {
+        fs.unlinkSync(picturePath);
+      }
+    }
+    
+    // Delete user
+    await userModel.deleteUser(userId);
+    
+    // Return 200 OK with success message
+    res.status(200).json({
+      status: 'success',
+      message: 'User has been successfully deleted',
+      data: null
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get user statistics
+ * @route   GET /api/admin/users/stats
+ * @access  Admin
+ */
+const getUserStats = async (req, res, next) => {
+  try {
+    const stats = await userModel.getUserStats();
+    
+    res.status(200).json({
+      status: 'success',
+      data: {
+        stats
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
-  createAdmin
+  createAdmin,
+  getAllUsers,
+  getUserById,
+  updateUser,
+  deleteUser,
+  getUserStats
 };

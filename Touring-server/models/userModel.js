@@ -311,7 +311,6 @@ const userModel = {
    * @param {string} secretKey - Admin creation secret key
    * @returns {Promise<Object>} Created admin user
    */
-
   async createAdmin(adminData, secretKey) {
     // Check if secret key matches
     if (secretKey !== process.env.ADMIN_SECRET_KEY) {
@@ -343,6 +342,215 @@ const userModel = {
     });
   
     return adminUser;
+  },
+
+  /**
+   * Get all users (for admin)
+   * @returns {Promise<Array>} Array of users
+   */
+
+
+  async getAllUsers(){
+    return pool.query(
+      `SELECT id, username, email, phone_number, profile_picture, role, is_verified, created_at 
+       FROM users
+       WHERE role = 'user'
+       ORDER BY created_at DESC`
+    );
+  },
+
+  /**
+   * Get user statistics
+   * @returns {Promise<Object>} User statistics
+   */
+
+  async getUserStats(){
+    // Get total users count
+    const [totalUsers] = await pool.query(
+      'SELECT COUNT(*) as count FROM users'
+    );
+
+    // Get user count by role
+    const [usersByRole] = await pool.query(
+      `SELECT role, COUNT(*) as count 
+       FROM users 
+       GROUP BY role`
+    );
+
+    // Get verified vs unverified user count
+    const [verificationStatus] = await pool.query(
+      `SELECT is_verified, COUNT(*) as count 
+       FROM users 
+       GROUP BY is_verified`
+    );
+
+    // Get users by registration month (for current year)
+    const [usersByMonth] = await pool.query(
+      `SELECT MONTH(created_at) as month, COUNT(*) as count 
+       FROM users 
+       WHERE YEAR(created_at) = YEAR(CURDATE())
+       GROUP BY MONTH(created_at)
+       ORDER BY month`
+    );
+
+    return {
+      totalUsers: totalUsers[0].count,
+      usersByRole,
+      verificationStatus,
+      usersByMonth
+    };
+  },
+  /**
+   * Update user by admin
+   * @param {number} userId - User ID
+   * @param {Object} userData - User data to update
+   * @returns {Promise<Object>} Updated user
+   */
+  async updateUserByAdmin(userId, userData) {
+  const connection = await pool.getConnection();
+  
+  try {
+    await connection.beginTransaction();
+    
+    // Fields that admin can update in users table
+    const userFields = {};
+    if (userData.username !== undefined) userFields.username = userData.username;
+    if (userData.email !== undefined) userFields.email = userData.email;
+    if (userData.phone_number !== undefined) userFields.phone_number = userData.phone_number;
+    if (userData.profile_picture !== undefined) userFields.profile_picture = userData.profile_picture;
+    if (userData.role !== undefined) userFields.role = userData.role;
+    if (userData.is_verified !== undefined) userFields.is_verified = userData.is_verified;
+    
+    // Fields that admin can update in user_profiles table
+    const profileFields = {};
+    if (userData.first_name !== undefined) profileFields.first_name = userData.first_name;
+    if (userData.last_name !== undefined) profileFields.last_name = userData.last_name;
+    if (userData.date_of_birth !== undefined) profileFields.date_of_birth = userData.date_of_birth;
+    if (userData.address !== undefined) profileFields.address = userData.address;
+    if (userData.city !== undefined) profileFields.city = userData.city;
+    if (userData.country !== undefined) profileFields.country = userData.country;
+    if (userData.postal_code !== undefined) profileFields.postal_code = userData.postal_code;
+    
+    // Check if username or email already exists (if being updated)
+    if (userFields.username) {
+      const existingUser = await this.findByUsername(userFields.username);
+      if (existingUser && existingUser.id !== parseInt(userId)) {
+        throw new Error(`Username ${userFields.username} is already taken`);
+      }
+    }
+    
+    if (userFields.email) {
+      const existingEmail = await this.findByEmail(userFields.email);
+      if (existingEmail && existingEmail.id !== parseInt(userId)) {
+        throw new Error(`Email ${userFields.email} is already in use`);
+      }
+    }
+    
+    // Update users table if there are fields to update
+    if (Object.keys(userFields).length > 0) {
+      const fields = Object.keys(userFields).map(field => `${field} = ?`).join(', ');
+      const values = [...Object.values(userFields), userId];
+      
+      await connection.query(
+        `UPDATE users SET ${fields} WHERE id = ?`,
+        values
+      );
+    }
+    
+    // Update user_profiles table if there are fields to update
+    if (Object.keys(profileFields).length > 0) {
+      // Check if the profile exists first
+      const [profileExists] = await connection.query(
+        'SELECT COUNT(*) as count FROM user_profiles WHERE user_id = ?',
+        [userId]
+      );
+      
+      if (profileExists[0].count === 0) {
+        // If profile doesn't exist, create one with provided fields
+        const fields = ['user_id', ...Object.keys(profileFields)];
+        const placeholders = fields.map(() => '?').join(', ');
+        const values = [userId, ...Object.values(profileFields)];
+        
+        await connection.query(
+          `INSERT INTO user_profiles (${fields.join(', ')}) VALUES (${placeholders})`,
+          values
+        );
+      } else {
+        // If profile exists, update it
+        const fields = Object.keys(profileFields).map(field => `${field} = ?`).join(', ');
+        const values = [...Object.values(profileFields), userId];
+        
+        await connection.query(
+          `UPDATE user_profiles SET ${fields} WHERE user_id = ?`,
+          values
+        );
+      }
+    }
+    
+    await connection.commit();
+    
+    // Get updated user with full profile information
+    const [rows] = await connection.query(
+      `SELECT u.id, u.username, u.email, u.profile_picture, u.phone_number, u.role, u.is_verified, u.created_at,
+       p.first_name, p.last_name, p.date_of_birth, p.address, p.city, p.country, p.postal_code
+       FROM users u
+       LEFT JOIN user_profiles p ON u.id = p.user_id
+       WHERE u.id = ?`,
+      [userId]
+    );
+    
+    return rows[0];
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+},
+
+  /**
+   * Delete user
+   * @param {number} userId - User ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async deleteUser(userId) {
+    const connection = await pool.getConnection();
+    
+    try {
+      await connection.beginTransaction();
+      
+      // Delete sessions
+      await connection.query(
+        'DELETE FROM sessions WHERE user_id = ?',
+        [userId]
+      );
+      
+      // Delete login attempts
+      await connection.query(
+        'DELETE FROM login_attempts WHERE email IN (SELECT email FROM users WHERE id = ?)',
+        [userId]
+      );
+      
+      // Delete user profile
+      await connection.query(
+        'DELETE FROM user_profiles WHERE user_id = ?',
+        [userId]
+      );
+      
+      // Delete user
+      await connection.query(
+        'DELETE FROM users WHERE id = ?',
+        [userId]
+      );
+      
+      await connection.commit();
+      return true;
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
   }
 };
 
