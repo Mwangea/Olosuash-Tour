@@ -100,17 +100,64 @@ const facebookCallback = (req, res, next) => {
  * @access  Public
  */
 const verifyEmail = async (req, res, next) => {
-  try {
-    const { token } = req.params;
-    await authService.verifyEmail(token);
-
-    // Redirect to frontend verification success page
-    res.redirect(`${process.env.FRONTEND_URL}/auth/verify-success`);
-  } catch (error) {
-    // Redirect to frontend verification failure page
-    res.redirect(`${process.env.FRONTEND_URL}/auth/verify-failure`);
-  }
-};
+    try {
+      const { token } = req.params;
+      
+      // Log token for debugging
+      console.log("Verification token received:", token);
+      
+      if (token === "undefined") {
+        throw new Error("Verification token is undefined");
+      }
+      
+      await authService.verifyEmail(token);
+  
+      // Return HTML success message for testing
+      res.status(200).send(`
+        <html>
+          <head>
+            <title>Email Verification Successful</title>
+            <style>
+              body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+              .success { color: green; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <h1 class="success">Email Verification Successful!</h1>
+              <p>Your email has been successfully verified. You can now log in to your account.</p>
+              <p>This is a temporary message for testing. In production, you will be redirected to the application.</p>
+            </div>
+          </body>
+        </html>
+      `);
+    } catch (error) {
+      console.error("Email verification error:", error.message);
+      
+      // Return HTML error message for testing
+      res.status(400).send(`
+        <html>
+          <head>
+            <title>Email Verification Failed</title>
+            <style>
+              body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+              .error { color: red; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <h1 class="error">Email Verification Failed</h1>
+              <p>We could not verify your email. The verification link may be invalid or expired.</p>
+              <p>Error: ${error.message}</p>
+              <p>This is a temporary message for testing. In production, you will be redirected to the application.</p>
+            </div>
+          </body>
+        </html>
+      `);
+    }
+  };
 
 /**
  * @desc    Forgot password

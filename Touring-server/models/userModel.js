@@ -13,59 +13,61 @@ const userModel = {
 
     async create(userData) {
         const connection = await pool.getConnection();
-
+      
         try {
-            await connection.beginTransaction();
-
-            //Hash password if provided
-            if (userData.password) {
-                userData.password = await bcrypt.hash(userData.password, 12);
-            }
-
-         // Generate verification token for email verification
-      if (!userData.is_verified) {
-        userData.verification_token = crypto.randomBytes(32).toString('hex');
-      }
+          await connection.beginTransaction();
       
-      const [result] = await connection.query(
-        'INSERT INTO users (username, email, password, profile_picture, phone_number, auth_provider, auth_provider_id, verification_token, is_verified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [
-          userData.username,
-          userData.email,
-          userData.password || null,
-          userData.profile_picture || null,
-          userData.phone_number || null,
-          userData.auth_provider || 'local',
-          userData.auth_provider_id || null,
-          userData.verification_token || null,
-          userData.is_verified || false
-        ]
-      );
+          // Hash password if provided
+          if (userData.password) {
+            userData.password = await bcrypt.hash(userData.password, 12);
+          }
       
-      const userId = result.insertId;
-      
-      // Create user profile
-      await connection.query(
-        'INSERT INTO user_profiles (user_id) VALUES (?)',
-        [userId]
-      );
-      
-      // Get the created user
-      const [users] = await connection.query(
-        'SELECT id, username, email, profile_picture, role, auth_provider, is_verified, created_at FROM users WHERE id = ?',
-        [userId]
-      );
-      
-      await connection.commit();
-      
-      return users[0];
-    } catch (error) {
-      await connection.rollback();
-      throw error;
-    } finally {
-      connection.release();
-    }
-  },
+          // Generate verification token for email verification
+          if (!userData.is_verified) {
+            userData.verification_token = crypto.randomBytes(32).toString('hex');
+          }
+          
+          // Execute insert query with role included
+          const [result] = await connection.query(
+            'INSERT INTO users (username, email, password, profile_picture, phone_number, auth_provider, auth_provider_id, verification_token, is_verified, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [
+              userData.username,
+              userData.email,
+              userData.password || null,
+              userData.profile_picture || null,
+              userData.phone_number || null,
+              userData.auth_provider || 'local',
+              userData.auth_provider_id || null,
+              userData.verification_token || null,
+              userData.is_verified || false,
+              userData.role || 'user' // Default to 'user' if not specified
+            ]
+          );
+          
+          const userId = result.insertId;
+          
+          // Create user profile
+          await connection.query(
+            'INSERT INTO user_profiles (user_id) VALUES (?)',
+            [userId]
+          );
+          
+          // Get the created user
+          const [users] = await connection.query(
+            'SELECT id, username, email, profile_picture, role, auth_provider, is_verified, verification_token, created_at FROM users WHERE id = ?',
+            [userId]
+          );
+          
+          await connection.commit();
+          
+          return users[0];
+        } catch (error) {
+          await connection.rollback();
+          throw error;
+        } finally {
+          connection.release();
+        }
+      },
   
   /**
    * Find user by ID
@@ -299,7 +301,7 @@ const userModel = {
         'SELECT COUNT(*) as count FROM users WHERE role = ?',
         ['admin']
     );
-    return row[0].count > 0;
+    return rows[0].count > 0;
   },
 
 
@@ -310,24 +312,36 @@ const userModel = {
    * @returns {Promise<Object>} Created admin user
    */
 
-  async createAdmin(adminData, secretKey){
-    //check if secret key matches
+  async createAdmin(adminData, secretKey) {
+    // Check if secret key matches
     if (secretKey !== process.env.ADMIN_SECRET_KEY) {
-        throw new Error('Invalid admin secret key');
+      throw new Error('Invalid admin secret key');
     }
-
-    //check if admin already exists
+  
+    // Check if admin already exists
     if (await this.adminExists()) {
-        throw new Error('Admin account already exists');
+      throw new Error('Admin account already exists');
     }
-
-    //create admin user
+  
+    // Check if username exists
+    const existingUser = await this.findByUsername(adminData.username);
+    if (existingUser) {
+      throw new Error(`Username ${adminData.username} is already taken`);
+    }
+  
+    // Check if email exists
+    const existingEmail = await this.findByEmail(adminData.email);
+    if (existingEmail) {
+      throw new Error(`Email ${adminData.email} is already in use`);
+    }
+  
+    // Create admin user with explicit role
     const adminUser = await this.create({
-        ...adminData,
-        role:'admin',
-        is_verified:true // Auto-verify admin
+      ...adminData,
+      role: 'admin',
+      is_verified: true // Auto-verify admin
     });
-
+  
     return adminUser;
   }
 };

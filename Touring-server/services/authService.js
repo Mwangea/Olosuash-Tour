@@ -82,6 +82,11 @@ const login = async (email, password, ipAddress, userAgent) => {
     throw new AppError('Invalid email or password', 401);
   }
 
+  // Add this check for verification
+  if (!user.is_verified) {
+    throw new AppError('Please verify your email before logging in', 403);
+  }
+
   // Create token
   const token = createToken(user.id);
 
@@ -158,7 +163,7 @@ const forgotPassword = async (email, host) => {
     const user = await userModel.findByEmail(email);
 
     // Generate reset URL
-    const resetUrl = `${host}/reset-password?token=${resetToken}`;
+    const resetUrl = `${host}/api/auth/reset-password/${resetToken}`;
 
     // Send password reset email
     await sendPasswordResetEmail(user, resetUrl);
@@ -191,5 +196,6 @@ module.exports = {
   socialLogin,
   verifyEmail,
   forgotPassword,
-  resetPassword
+  resetPassword,
+  createToken
 };

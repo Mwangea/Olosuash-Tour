@@ -1,4 +1,7 @@
 const nodemailer = require('nodemailer');
+const path = require('path');
+const fs = require('fs');
+
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_OUTGOING_SERVER,
   port: process.env.EMAIL_SMTP_PORT,
@@ -85,7 +88,7 @@ const emailTemplate = (content) => {
     <body>
       <div class="container">
         <div class="header">
-          <img src="/Touring-server/public/olosuashi.png" alt="Olosuash Tours Logo" class="logo">
+          <img src="cid:logo" alt="Olosuash Tours Logo" class="logo">
         </div>
         <div class="content">
           ${content}
@@ -106,14 +109,25 @@ const emailTemplate = (content) => {
 
 const sendEmail = async (options) => {
   try {
-    // Define the email options
+    // Get the logo path
+    const logoPath = path.join(__dirname, '../public/olosuashi.png');
+
+    // Define the email options with the logo as an attachment
     const mailOptions = {
       from: `Olosuash Tours <${process.env.EMAIL_USERNAME}>`,
       to: options.email,
       subject: options.subject,
       text: options.message || options.textContent,
-      html: options.html
+      html: options.html,
+      attachments: [
+        {
+          filename: 'olosuashi.png',
+          path: logoPath,
+          cid: 'logo' // This content ID is referenced in the HTML
+        }
+      ]
     };
+    
     // Send the email
     const info = await transporter.sendMail(mailOptions);
     console.log('Email sent: ', info.messageId);
