@@ -11,6 +11,7 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const { errorHandler } = require('./middleware/errorHandler');
 const adminRoutes = require('./routes/adminRoutes');
+const tourRoutes = require('./routes/tourRoutes');
 
 // Passport config
 require('./config/passport');
@@ -29,6 +30,7 @@ const limiter = rateLimit({
   max: 100, // limit each IP to 100 requests per windowMs
   message: 'Too many requests from this IP, please try again after 15 minutes'
 });
+
 app.use('/api', limiter);
 
 // Body parser
@@ -49,10 +51,14 @@ if (process.env.NODE_ENV === 'development') {
 // Initialize passport
 app.use(passport.initialize());
 
+// Serve static files
+app.use('/uploads', express.static('uploads'));
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/tours', tourRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

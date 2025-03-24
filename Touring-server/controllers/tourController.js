@@ -1,0 +1,491 @@
+const Tour = require('../models/tourModel');
+const { AppError } = require('../middleware/errorHandler');
+const fs = require('fs');
+const path = require('path');
+
+/**
+ * @desc    Create a new tour
+ * @route   POST /api/tours
+ * @access  Admin
+ */
+const createTour = async (req, res, next) => {
+  try {
+    // Process uploaded files
+    const images = [];
+    if (req.files && req.files.length > 0) {
+      req.files.forEach(file => {
+        images.push(`/uploads/tour-images/${file.filename}`);
+      });
+    }
+    
+    const tour = await Tour.createTour(req.body, images);
+    
+    res.status(201).json({
+      status: 'success',
+      data: {
+        tour
+      }
+    });
+  } catch (error) {
+    // Clean up uploaded files if there was an error
+    if (req.files && req.files.length > 0) {
+      req.files.forEach(file => {
+        fs.unlink(file.path, (err) => {
+          if (err) console.error('Error deleting file:', err);
+        });
+      });
+    }
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get all tours
+ * @route   GET /api/tours
+ * @access  Public
+ */
+const getAllTours = async (req, res, next) => {
+  try {
+    // Extract filter options from query params
+    const options = {
+      page: parseInt(req.query.page) || 1,
+      limit: parseInt(req.query.limit) || 10,
+      sort: req.query.sort || 'created_at',
+      order: req.query.order?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC',
+      featured: req.query.featured === 'true' ? 1 : (req.query.featured === 'false' ? 0 : undefined),
+      minPrice: req.query.minPrice ? parseFloat(req.query.minPrice) : undefined,
+      maxPrice: req.query.maxPrice ? parseFloat(req.query.maxPrice) : undefined,
+      difficulty: ['easy', 'medium', 'difficult'].includes(req.query.difficulty) ? req.query.difficulty : undefined,
+      duration: req.query.duration ? parseInt(req.query.duration) : undefined,
+      search: req.query.search || undefined
+    };
+    
+    const result = await Tour.getAllTours(options);
+    
+    res.status(200).json({
+      status: 'success',
+      results: result.tours.length,
+      pagination: result.pagination,
+      data: {
+        tours: result.tours
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get featured tours
+ * @route   GET /api/tours/featured
+ * @access  Public
+ */
+const getFeaturedTours = async (req, res, next) => {
+  try {
+    const limit = parseInt(req.query.limit) || 5;
+    const tours = await Tour.getFeaturedTours(limit);
+    
+    res.status(200).json({
+      status: 'success',
+      results: tours.length,
+      data: {
+        tours
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get top rated tours
+ * @route   GET /api/tours/top-rated
+ * @access  Public
+ */
+const getTopRatedTours = async (req, res, next) => {
+  try {
+    const limit = parseInt(req.query.limit) || 5;
+    const tours = await Tour.getTopRatedTours(limit);
+    
+    res.status(200).json({
+      status: 'success',
+      results: tours.length,
+      data: {
+        tours
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get tour by ID
+ * @route   GET /api/tours/:id
+ * @access  Public
+ */
+const getTourById = async (req, res, next) => {
+  try {
+    const tour = await Tour.getTourById(req.params.id);
+    
+    if (!tour) {
+      return next(new AppError('Tour not found', 404));
+    }
+    
+    res.status(200).json({
+      status: 'success',
+      data: {
+        tour
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get tour by slug
+ * @route   GET /api/tours/slug/:slug
+ * @access  Public
+ */
+const getTourBySlug = async (req, res, next) => {
+  try {
+    const tour = await Tour.getTourBySlug(req.params.slug);
+    
+    if (!tour) {
+      return next(new AppError('Tour not found', 404));
+    }
+    
+    res.status(200).json({
+      status: 'success',
+      data: {
+        tour
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Update tour
+ * @route   PATCH /api/tours/:id
+ * @access  Admin
+ */
+
+const updateTour = async (req, res, next) => {
+    try {
+      // Check if tour exists
+      const tourExists = await Tour.getTourById(req.params.id);
+      if (!tourExists) {
+        return next(new AppError('Tour not found', 404));
+      }
+      
+      const tour = await Tour.updateTour(req.params.id, req.body);
+      
+      res.status(200).json({
+        status: 'success',
+        data: {
+          tour
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+  
+  /**
+   * @desc    Delete tour
+   * @route   DELETE /api/tours/:id
+   * @access  Admin
+   */
+  const deleteTour = async (req, res, next) => {
+    try {
+      const success = await Tour.deleteTour(req.params.id);
+      
+      if (!success) {
+        return next(new AppError('Tour not found', 404));
+      }
+      
+      res.status(204).json({
+        status: 'success',
+        data: null
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+  
+  /**
+   * @desc    Add tour images
+   * @route   POST /api/tours/:id/images
+   * @access  Admin
+   */
+  const addTourImages = async (req, res, next) => {
+    try {
+      // Check if tour exists
+      const tour = await Tour.getTourById(req.params.id);
+      if (!tour) {
+        return next(new AppError('Tour not found', 404));
+      }
+      
+      if (!req.files || req.files.length === 0) {
+        return next(new AppError('No files uploaded', 400));
+      }
+      
+      const imagePromises = req.files.map(async (file, index) => {
+        const imagePath = `/uploads/tour-images/${file.filename}`;
+        // Set the first uploaded image as cover if tour has no images
+        const isCover = index === 0 && tour.images.length === 0;
+        return await Tour.addTourImage(tour.id, imagePath, isCover);
+      });
+      
+      await Promise.all(imagePromises);
+      
+      // Get updated tour
+      const updatedTour = await Tour.getTourById(req.params.id);
+      
+      res.status(200).json({
+        status: 'success',
+        data: {
+          tour: updatedTour
+        }
+      });
+    } catch (error) {
+      // Clean up uploaded files if there was an error
+      if (req.files && req.files.length > 0) {
+        req.files.forEach(file => {
+          fs.unlink(file.path, (err) => {
+            if (err) console.error('Error deleting file:', err);
+          });
+        });
+      }
+      next(error);
+    }
+  };
+  
+  /**
+   * @desc    Remove tour image
+   * @route   DELETE /api/tours/images/:id
+   * @access  Admin
+   */
+  const removeTourImage = async (req, res, next) => {
+    try {
+      const success = await Tour.removeTourImage(req.params.id);
+      
+      if (!success) {
+        return next(new AppError('Image not found', 404));
+      }
+      
+      res.status(204).json({
+        status: 'success',
+        data: null
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+  
+  /**
+   * @desc    Set image as cover
+   * @route   PATCH /api/tours/:tourId/images/:imageId/cover
+   * @access  Admin
+   */
+  const setImageAsCover = async (req, res, next) => {
+    try {
+      const { tourId, imageId } = req.params;
+      
+      const success = await Tour.updateImageCover(tourId, imageId);
+      
+      if (!success) {
+        return next(new AppError('Tour or image not found', 404));
+      }
+      
+      // Get updated tour
+      const updatedTour = await Tour.getTourById(tourId);
+      
+      res.status(200).json({
+        status: 'success',
+        data: {
+          tour: updatedTour
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+  
+  /**
+   * @desc    Add tour review
+   * @route   POST /api/tours/:id/reviews
+   * @access  Authenticated
+   */
+  const addReview = async (req, res, next) => {
+    try {
+      const { rating, review } = req.body;
+      const { id: tourId } = req.params;
+      const userId = req.user.id;
+      
+      // Validate rating
+      if (!rating || rating < 1 || rating > 5) {
+        return next(new AppError('Rating must be between 1 and 5', 400));
+      }
+      
+      // Check if tour exists
+      const tour = await Tour.getTourById(tourId);
+      if (!tour) {
+        return next(new AppError('Tour not found', 404));
+      }
+      
+      const success = await Tour.addReview(tourId, userId, rating, review);
+      
+      res.status(200).json({
+        status: 'success',
+        data: {
+          message: 'Review added successfully'
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+  
+  /**
+   * @desc    Add tour to wishlist
+   * @route   POST /api/tours/:id/wishlist
+   * @access  Authenticated
+   */
+  const addToWishlist = async (req, res, next) => {
+    try {
+      const { id: tourId } = req.params;
+      const userId = req.user.id;
+      
+      // Check if tour exists
+      const tour = await Tour.getTourById(tourId);
+      if (!tour) {
+        return next(new AppError('Tour not found', 404));
+      }
+      
+      await Tour.addToWishlist(userId, tourId);
+      
+      res.status(200).json({
+        status: 'success',
+        data: {
+          message: 'Tour added to wishlist'
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+  
+  /**
+   * @desc    Remove tour from wishlist
+   * @route   DELETE /api/tours/:id/wishlist
+   * @access  Authenticated
+   */
+  const removeFromWishlist = async (req, res, next) => {
+    try {
+      const { id: tourId } = req.params;
+      const userId = req.user.id;
+      
+      const success = await Tour.removeFromWishlist(userId, tourId);
+      
+      if (!success) {
+        return next(new AppError('Tour not in wishlist', 404));
+      }
+      
+      res.status(204).json({
+        status: 'success',
+        data: null
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+  
+  /**
+   * @desc    Get user's wishlist
+   * @route   GET /api/tours/wishlist
+   * @access  Authenticated
+   */
+  const getWishlist = async (req, res, next) => {
+    try {
+      const userId = req.user.id;
+      
+      const tours = await Tour.getUserWishlist(userId);
+      
+      res.status(200).json({
+        status: 'success',
+        results: tours.length,
+        data: {
+          tours
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+  
+  /**
+   * @desc    Check if tour is in user's wishlist
+   * @route   GET /api/tours/:id/wishlist/check
+   * @access  Authenticated
+   */
+  const checkWishlist = async (req, res, next) => {
+    try {
+      const { id: tourId } = req.params;
+      const userId = req.user.id;
+      
+      const isInWishlist = await Tour.checkWishlist(userId, tourId);
+      
+      res.status(200).json({
+        status: 'success',
+        data: {
+          isInWishlist
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+  
+  /**
+   * @desc    Get tour statistics
+   * @route   GET /api/tours/stats
+   * @access  Admin
+   */
+  const getTourStats = async (req, res, next) => {
+    try {
+      const stats = await Tour.getTourStats();
+      
+      res.status(200).json({
+        status: 'success',
+        data: {
+          stats
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+  
+  module.exports = {
+    createTour,
+    getAllTours,
+    getFeaturedTours,
+    getTopRatedTours,
+    getTourById,
+    getTourBySlug,
+    updateTour,
+    deleteTour,
+    addTourImages,
+    removeTourImage,
+    setImageAsCover,
+    addReview,
+    addToWishlist,
+    removeFromWishlist,
+    getWishlist,
+    checkWishlist,
+    getTourStats
+  };
