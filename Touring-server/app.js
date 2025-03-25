@@ -12,6 +12,8 @@ const userRoutes = require('./routes/userRoutes');
 const { errorHandler } = require('./middleware/errorHandler');
 const adminRoutes = require('./routes/adminRoutes');
 const tourRoutes = require('./routes/tourRoutes');
+const heroRoutes = require('./routes/heroRoutes');
+const bookingRouter = require('./routes/bookingRoutes');
 
 // Passport config
 require('./config/passport');
@@ -59,6 +61,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/tours', tourRoutes);
+app.use('/api/hero', heroRoutes);
+app.use('/api/bookings', bookingRouter);
 
 // Health check route
 app.get('/api/health', (req, res) => {

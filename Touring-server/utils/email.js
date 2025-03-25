@@ -114,7 +114,7 @@ const sendEmail = async (options) => {
 
     // Define the email options with the logo as an attachment
     const mailOptions = {
-      from: `Olosuash Tours <${process.env.EMAIL_USERNAME}>`,
+      from: `Olosuashi Tours <${process.env.EMAIL_USERNAME}>`,
       to: options.email,
       subject: options.subject,
       text: options.message || options.textContent,
