@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const tourController = require('../controllers/tourController');
-const { authenticate, restrictTo } = require('../middleware/authMiddleware');
+const { isAuthenticated, restrictTo } = require('../middleware/auth');
 
 // Configure multer for tour image uploads
 const multer = require('multer');
@@ -53,9 +53,12 @@ router.get('/featured', tourController.getFeaturedTours);
 router.get('/top-rated', tourController.getTopRatedTours);
 router.get('/:id', tourController.getTourById);
 router.get('/slug/:slug', tourController.getTourBySlug);
+router.get('/regions', tourController.getRegions);
+router.get('/vehicle-types', tourController.getVehicleTypes);
+router.get('/service-categories', tourController.getServiceCategories);
 
 // Protected routes (authentication required)
-router.use(authenticate);
+router.use(isAuthenticated);
 
 // Wishlist routes
 router.get('/wishlist', tourController.getWishlist);

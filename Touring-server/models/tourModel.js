@@ -1,9 +1,15 @@
-const db = require('../config/db');
+const { pool } = require('../config/db');
 const slugify = require('slugify');
 
-class Tour {
-  static async createTour(tourData, imagePaths = []) {
-    const connection = await db.getConnection();
+const tourModel = {
+  /**
+   * Create a new tour
+   * @param {Object} tourData - Tour data
+   * @param {Array} imagePaths - Array of image paths
+   * @returns {Promise<Object>} Newly created tour
+   */
+  async create(tourData, imagePaths = []) {
+    const connection = await pool.getConnection();
     
     try {
       await connection.beginTransaction();
@@ -14,9 +20,9 @@ class Tour {
       // Insert tour
       const [result] = await connection.query(
         `INSERT INTO tours 
-        (title, slug, description, summary, duration, max_group_size, 
-         difficulty, price, discount_price, featured) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (title, slug, description, summary, duration, max_group_size, min_group_size, 
+         difficulty, price, discount_price, featured, accommodation_details) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           tourData.title,
           slug,
@@ -24,10 +30,12 @@ class Tour {
           tourData.summary,
           tourData.duration,
           tourData.maxGroupSize,
+          tourData.minGroupSize || 1,
           tourData.difficulty,
           tourData.price,
           tourData.discountPrice || null,
-          tourData.featured || false
+          tourData.featured || false,
+          tourData.accommodationDetails
         ]
       );
       
@@ -44,6 +52,22 @@ class Tour {
         await connection.query(
           `INSERT INTO tour_images (tour_id, image_path, is_cover) VALUES ?`,
           [imageValues]
+        );
+      }
+
+      // Insert regions
+      if (tourData.regions && tourData.regions.length > 0) {
+        await connection.query(
+          `INSERT INTO tour_regions (tour_id, region_id) VALUES ?`,
+          [tourData.regions.map(regionId => [tourId, regionId])]
+        );
+      }
+
+      // Insert vehicles
+      if (tourData.vehicles && tourData.vehicles.length > 0) {
+        await connection.query(
+          `INSERT INTO tour_vehicles (tour_id, vehicle_type_id, capacity, is_primary) VALUES ?`,
+          [tourData.vehicles.map(v => [tourId, v.vehicleTypeId, v.capacity, v.isPrimary || false])]
         );
       }
       
@@ -80,29 +104,19 @@ class Tour {
         );
       }
       
-      // Insert included services if provided
+      // Insert included services
       if (tourData.includedServices && tourData.includedServices.length > 0) {
-        const includedValues = tourData.includedServices.map(service => [
-          tourId,
-          service
-        ]);
-        
         await connection.query(
-          `INSERT INTO tour_included_services (tour_id, service) VALUES ?`,
-          [includedValues]
+          `INSERT INTO tour_included_services (tour_id, service_id, details) VALUES ?`,
+          [tourData.includedServices.map(s => [tourId, s.serviceId, s.details || null])]
         );
       }
       
-      // Insert excluded services if provided
+      // Insert excluded services
       if (tourData.excludedServices && tourData.excludedServices.length > 0) {
-        const excludedValues = tourData.excludedServices.map(service => [
-          tourId,
-          service
-        ]);
-        
         await connection.query(
-          `INSERT INTO tour_excluded_services (tour_id, service) VALUES ?`,
-          [excludedValues]
+          `INSERT INTO tour_excluded_services (tour_id, service_id, details) VALUES ?`,
+          [tourData.excludedServices.map(s => [tourId, s.serviceId, s.details || null])]
         );
       }
       
@@ -125,7 +139,7 @@ class Tour {
       await connection.commit();
       
       // Return the created tour
-      return this.getTourById(tourId);
+      return this.findById(tourId);
       
     } catch (error) {
       await connection.rollback();
@@ -133,9 +147,14 @@ class Tour {
     } finally {
       connection.release();
     }
-  }
+  },
   
-  static async getAllTours(options = {}) {
+  /**
+   * Get all tours with pagination and filtering
+   * @param {Object} options - Query options
+   * @returns {Promise<Object>} Tours and pagination info
+   */
+  async findAll(options = {}) {
     const {
       page = 1,
       limit = 10,
@@ -146,7 +165,8 @@ class Tour {
       maxPrice,
       difficulty,
       duration,
-      search
+      search,
+      regionId
     } = options;
     
     // Calculate offset for pagination
@@ -156,7 +176,9 @@ class Tour {
     let query = `
       SELECT 
         t.*,
-        (SELECT image_path FROM tour_images WHERE tour_id = t.id AND is_cover = 1 LIMIT 1) as cover_image
+        (SELECT image_path FROM tour_images WHERE tour_id = t.id AND is_cover = 1 LIMIT 1) as cover_image,
+        (SELECT AVG(rating) FROM tour_reviews WHERE tour_id = t.id) as average_rating,
+        (SELECT COUNT(*) FROM tour_reviews WHERE tour_id = t.id) as review_count
       FROM tours t
       WHERE 1=1
     `;
@@ -195,22 +217,73 @@ class Tour {
       const searchTerm = `%${search}%`;
       queryParams.push(searchTerm, searchTerm, searchTerm);
     }
+
+    if (regionId) {
+      query += ` AND t.id IN (SELECT tour_id FROM tour_regions WHERE region_id = ?)`;
+      queryParams.push(regionId);
+    }
+    
+    // Validate sort field to prevent SQL injection
+    const validSortFields = ['created_at', 'price', 'title', 'duration', 'average_rating'];
+    const safeSort = validSortFields.includes(sort) ? sort : 'created_at';
+    
+    // Handle special case for average_rating which is a calculated field
+    const sortField = safeSort === 'average_rating' 
+      ? '(SELECT AVG(rating) FROM tour_reviews WHERE tour_id = t.id)'
+      : `t.${safeSort}`;
     
     // Add sorting
-    query += ` ORDER BY t.${sort} ${order}`;
+    query += ` ORDER BY ${sortField} ${order === 'ASC' ? 'ASC' : 'DESC'}`;
     
     // Add pagination
     query += ` LIMIT ? OFFSET ?`;
     queryParams.push(parseInt(limit), parseInt(offset));
     
     // Execute query
-    const [rows] = await db.query(query, queryParams);
+    const [rows] = await pool.query(query, queryParams);
     
     // Count total tours for pagination info
-    const [countResult] = await db.query(
-      `SELECT COUNT(*) as total FROM tours t WHERE 1=1`,
-      queryParams.slice(0, -2) // Remove limit and offset params
-    );
+    let countQuery = `SELECT COUNT(*) as total FROM tours t WHERE 1=1`;
+    const countParams = [];
+    
+    // Rebuild the WHERE clause for count query
+    if (featured !== undefined) {
+      countQuery += ` AND t.featured = ?`;
+      countParams.push(featured);
+    }
+    
+    if (minPrice) {
+      countQuery += ` AND t.price >= ?`;
+      countParams.push(minPrice);
+    }
+    
+    if (maxPrice) {
+      countQuery += ` AND t.price <= ?`;
+      countParams.push(maxPrice);
+    }
+    
+    if (difficulty) {
+      countQuery += ` AND t.difficulty = ?`;
+      countParams.push(difficulty);
+    }
+    
+    if (duration) {
+      countQuery += ` AND t.duration = ?`;
+      countParams.push(duration);
+    }
+    
+    if (search) {
+      countQuery += ` AND (t.title LIKE ? OR t.description LIKE ? OR t.summary LIKE ?)`;
+      const searchTerm = `%${search}%`;
+      countParams.push(searchTerm, searchTerm, searchTerm);
+    }
+
+    if (regionId) {
+      countQuery += ` AND t.id IN (SELECT tour_id FROM tour_regions WHERE region_id = ?)`;
+      countParams.push(regionId);
+    }
+    
+    const [countResult] = await pool.query(countQuery, countParams);
     
     const total = countResult[0].total;
     const totalPages = Math.ceil(total / limit);
@@ -224,11 +297,16 @@ class Tour {
         limit: parseInt(limit)
       }
     };
-  }
+  },
   
-  static async getTourById(id) {
+  /**
+   * Find tour by ID
+   * @param {number} id - Tour ID
+   * @returns {Promise<Object|null>} Tour object or null if not found
+   */
+  async findById(id) {
     // Get the main tour information
-    const [tourRows] = await db.query(
+    const [tourRows] = await pool.query(
       `SELECT * FROM tours WHERE id = ?`,
       [id]
     );
@@ -240,14 +318,30 @@ class Tour {
     const tour = tourRows[0];
     
     // Get tour images
-    const [images] = await db.query(
+    const [images] = await pool.query(
       `SELECT id, image_path, is_cover FROM tour_images WHERE tour_id = ?`,
       [id]
     );
     tour.images = images;
+
+    // Get regions
+    const [regions] = await pool.query(`
+      SELECT r.* FROM tour_regions tr
+      JOIN regions r ON tr.region_id = r.id
+      WHERE tr.tour_id = ?
+    `, [id]);
+    tour.regions = regions;
+
+    // Get vehicles
+    const [vehicles] = await pool.query(`
+      SELECT vt.name as vehicle_type, tv.* FROM tour_vehicles tv
+      JOIN vehicle_types vt ON tv.vehicle_type_id = vt.id
+      WHERE tv.tour_id = ?
+    `, [id]);
+    tour.vehicles = vehicles;
     
     // Get tour itinerary
-    const [itinerary] = await db.query(
+    const [itinerary] = await pool.query(
       `SELECT id, day, title, description FROM tour_itineraries 
        WHERE tour_id = ? ORDER BY day ASC`,
       [id]
@@ -255,7 +349,7 @@ class Tour {
     tour.itinerary = itinerary;
     
     // Get tour locations
-    const [locations] = await db.query(
+    const [locations] = await pool.query(
       `SELECT id, name, description, latitude, longitude, day 
        FROM tour_locations WHERE tour_id = ?`,
       [id]
@@ -263,21 +357,23 @@ class Tour {
     tour.locations = locations;
     
     // Get included services
-    const [includedServices] = await db.query(
-      `SELECT id, service FROM tour_included_services WHERE tour_id = ?`,
-      [id]
-    );
-    tour.includedServices = includedServices.map(item => item.service);
+    const [includedServices] = await pool.query(`
+      SELECT s.*, tis.details FROM tour_included_services tis
+      JOIN services s ON tis.service_id = s.id
+      WHERE tis.tour_id = ?
+    `, [id]);
+    tour.includedServices = includedServices;
     
     // Get excluded services
-    const [excludedServices] = await db.query(
-      `SELECT id, service FROM tour_excluded_services WHERE tour_id = ?`,
-      [id]
-    );
-    tour.excludedServices = excludedServices.map(item => item.service);
+    const [excludedServices] = await pool.query(`
+      SELECT s.*, tes.details FROM tour_excluded_services tes
+      JOIN services s ON tes.service_id = s.id
+      WHERE tes.tour_id = ?
+    `, [id]);
+    tour.excludedServices = excludedServices;
     
     // Get availability dates
-    const [availability] = await db.query(
+    const [availability] = await pool.query(
       `SELECT id, start_date, end_date, available_spots 
        FROM tour_availability WHERE tour_id = ?`,
       [id]
@@ -285,7 +381,7 @@ class Tour {
     tour.availability = availability;
     
     // Get reviews
-    const [reviews] = await db.query(
+    const [reviews] = await pool.query(
       `SELECT 
          r.id, r.rating, r.review, r.created_at,
          u.id as user_id, u.username, u.profile_picture
@@ -298,11 +394,16 @@ class Tour {
     tour.reviews = reviews;
     
     return tour;
-  }
+  },
   
-  static async getTourBySlug(slug) {
+  /**
+   * Find tour by slug
+   * @param {string} slug - Tour slug
+   * @returns {Promise<Object|null>} Tour object or null if not found
+   */
+  async findBySlug(slug) {
     // Get the tour ID by slug
-    const [tourRows] = await db.query(
+    const [tourRows] = await pool.query(
       `SELECT id FROM tours WHERE slug = ?`,
       [slug]
     );
@@ -311,12 +412,18 @@ class Tour {
       return null;
     }
     
-    // Use the existing getTourById method to fetch all tour details
-    return this.getTourById(tourRows[0].id);
-  }
+    // Use the existing findById method to fetch all tour details
+    return this.findById(tourRows[0].id);
+  },
   
-  static async updateTour(id, tourData) {
-    const connection = await db.getConnection();
+  /**
+   * Update tour
+   * @param {number} id - Tour ID
+   * @param {Object} tourData - Tour data to update
+   * @returns {Promise<Object>} Updated tour
+   */
+  async update(id, tourData) {
+    const connection = await pool.getConnection();
     
     try {
       await connection.beginTransaction();
@@ -329,7 +436,8 @@ class Tour {
       // Build the update query dynamically based on provided fields
       const allowedFields = [
         'title', 'slug', 'description', 'summary', 'duration', 
-        'max_group_size', 'difficulty', 'price', 'discount_price', 'featured'
+        'max_group_size', 'min_group_size', 'difficulty', 'price', 
+        'discount_price', 'featured', 'accommodation_details'
       ];
       
       const updateFields = [];
@@ -338,7 +446,9 @@ class Tour {
       // Convert camelCase to snake_case for database
       const fieldMapping = {
         maxGroupSize: 'max_group_size',
-        discountPrice: 'discount_price'
+        minGroupSize: 'min_group_size',
+        discountPrice: 'discount_price',
+        accommodationDetails: 'accommodation_details'
       };
       
       for (const [key, value] of Object.entries(tourData)) {
@@ -364,15 +474,43 @@ class Tour {
         );
       }
       
+      // Handle regions updates if provided
+      if (tourData.regions) {
+        await connection.query(
+          `DELETE FROM tour_regions WHERE tour_id = ?`,
+          [id]
+        );
+        
+        if (tourData.regions.length > 0) {
+          await connection.query(
+            `INSERT INTO tour_regions (tour_id, region_id) VALUES ?`,
+            [tourData.regions.map(regionId => [id, regionId])]
+          );
+        }
+      }
+      
+      // Handle vehicles updates if provided
+      if (tourData.vehicles) {
+        await connection.query(
+          `DELETE FROM tour_vehicles WHERE tour_id = ?`,
+          [id]
+        );
+        
+        if (tourData.vehicles.length > 0) {
+          await connection.query(
+            `INSERT INTO tour_vehicles (tour_id, vehicle_type_id, capacity, is_primary) VALUES ?`,
+            [tourData.vehicles.map(v => [id, v.vehicleTypeId, v.capacity, v.isPrimary || false])]
+          );
+        }
+      }
+      
       // Handle itinerary updates if provided
       if (tourData.itinerary) {
-        // Delete existing itinerary
         await connection.query(
           `DELETE FROM tour_itineraries WHERE tour_id = ?`,
           [id]
         );
         
-        // Insert new itinerary
         if (tourData.itinerary.length > 0) {
           const itineraryValues = tourData.itinerary.map(item => [
             id,
@@ -390,13 +528,11 @@ class Tour {
       
       // Handle locations updates if provided
       if (tourData.locations) {
-        // Delete existing locations
         await connection.query(
           `DELETE FROM tour_locations WHERE tour_id = ?`,
           [id]
         );
         
-        // Insert new locations
         if (tourData.locations.length > 0) {
           const locationValues = tourData.locations.map(location => [
             id,
@@ -417,57 +553,41 @@ class Tour {
       
       // Handle included services updates if provided
       if (tourData.includedServices) {
-        // Delete existing included services
         await connection.query(
           `DELETE FROM tour_included_services WHERE tour_id = ?`,
           [id]
         );
         
-        // Insert new included services
         if (tourData.includedServices.length > 0) {
-          const includedValues = tourData.includedServices.map(service => [
-            id,
-            service
-          ]);
-          
           await connection.query(
-            `INSERT INTO tour_included_services (tour_id, service) VALUES ?`,
-            [includedValues]
+            `INSERT INTO tour_included_services (tour_id, service_id, details) VALUES ?`,
+            [tourData.includedServices.map(s => [id, s.serviceId, s.details || null])]
           );
         }
       }
       
       // Handle excluded services updates if provided
       if (tourData.excludedServices) {
-        // Delete existing excluded services
         await connection.query(
           `DELETE FROM tour_excluded_services WHERE tour_id = ?`,
           [id]
         );
         
-        // Insert new excluded services
         if (tourData.excludedServices.length > 0) {
-          const excludedValues = tourData.excludedServices.map(service => [
-            id,
-            service
-          ]);
-          
           await connection.query(
-            `INSERT INTO tour_excluded_services (tour_id, service) VALUES ?`,
-            [excludedValues]
+            `INSERT INTO tour_excluded_services (tour_id, service_id, details) VALUES ?`,
+            [tourData.excludedServices.map(s => [id, s.serviceId, s.details || null])]
           );
         }
       }
       
       // Handle availability updates if provided
       if (tourData.availability) {
-        // Delete existing availability
         await connection.query(
           `DELETE FROM tour_availability WHERE tour_id = ?`,
           [id]
         );
         
-        // Insert new availability
         if (tourData.availability.length > 0) {
           const availabilityValues = tourData.availability.map(date => [
             id,
@@ -487,7 +607,7 @@ class Tour {
       await connection.commit();
       
       // Return the updated tour
-      return this.getTourById(id);
+      return this.findById(id);
       
     } catch (error) {
       await connection.rollback();
@@ -495,18 +615,18 @@ class Tour {
     } finally {
       connection.release();
     }
-  }
+  },
   
-  static async deleteTour(id) {
-    const connection = await db.getConnection();
-    
+  /**
+   * Delete tour
+   * @param {number} id - Tour ID
+   * @returns {Promise<boolean>} True if deletion was successful
+   */
+  async delete(id) {
+    const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
-      
-      // Delete all related records
-      // Due to foreign key constraints with CASCADE delete, 
-      // we only need to delete the main tour record
-      
+    
       const [result] = await connection.query(
         `DELETE FROM tours WHERE id = ?`,
         [id]
@@ -522,41 +642,82 @@ class Tour {
     } finally {
       connection.release();
     }
-  }
+  },
   
-  static async addTourImage(tourId, imagePath, isCover = false) {
-    // If setting as cover, unset other cover images
-    if (isCover) {
-      await db.query(
-        `UPDATE tour_images SET is_cover = 0 WHERE tour_id = ?`,
-        [tourId]
-      );
-    }
-    
-    // Insert new image
-    const [result] = await db.query(
-      `INSERT INTO tour_images (tour_id, image_path, is_cover) VALUES (?, ?, ?)`,
-      [tourId, imagePath, isCover]
-    );
-    
-    return result.insertId;
-  }
-  
-  static async removeTourImage(imageId) {
-    const [result] = await db.query(
-      `DELETE FROM tour_images WHERE id = ?`,
-      [imageId]
-    );
-    
-    return result.affectedRows > 0;
-  }
-  
-  static async updateImageCover(tourId, imageId) {
-    const connection = await db.getConnection();
-    
+  /**
+   * Add tour image
+   * @param {number} tourId - Tour ID
+   * @param {string} imagePath - Image path
+   * @param {boolean} isCover - Whether the image is a cover image
+   * @returns {Promise<number>} Image ID
+   */
+  async addImage(tourId, imagePath, isCover = false) {
+    const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
+    
+      // If setting as cover, unset other cover images
+      if (isCover) {
+        await connection.query(
+          `UPDATE tour_images SET is_cover = 0 WHERE tour_id = ?`,
+          [tourId]
+        );
+      }
       
+      // Insert new image
+      const [result] = await connection.query(
+        `INSERT INTO tour_images (tour_id, image_path, is_cover) VALUES (?, ?, ?)`,
+        [tourId, imagePath, isCover]
+      );
+      
+      await connection.commit();
+      
+      return result.insertId;
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  },
+  
+  /**
+   * Remove tour image
+   * @param {number} imageId - Image ID
+   * @returns {Promise<boolean>} True if deletion was successful
+   */
+  async removeImage(imageId) {
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+    
+      const [result] = await connection.query(
+        `DELETE FROM tour_images WHERE id = ?`,
+        [imageId]
+      );
+      
+      await connection.commit();
+      
+      return result.affectedRows > 0;
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  },
+  
+  /**
+   * Update image cover
+   * @param {number} tourId - Tour ID
+   * @param {number} imageId - Image ID
+   * @returns {Promise<boolean>} True if update was successful
+   */
+  async updateImageCover(tourId, imageId) {
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+    
       // Reset all cover flags for this tour
       await connection.query(
         `UPDATE tour_images SET is_cover = 0 WHERE tour_id = ?`,
@@ -564,28 +725,35 @@ class Tour {
       );
       
       // Set the new cover image
-      await connection.query(
+      const [result] = await connection.query(
         `UPDATE tour_images SET is_cover = 1 WHERE id = ? AND tour_id = ?`,
         [imageId, tourId]
       );
       
       await connection.commit();
       
-      return true;
+      return result.affectedRows > 0;
     } catch (error) {
       await connection.rollback();
       throw error;
     } finally {
       connection.release();
     }
-  }
+  },
   
-  static async addReview(tourId, userId, rating, review) {
-    const connection = await db.getConnection();
-    
+  /**
+   * Add review to tour
+   * @param {number} tourId - Tour ID
+   * @param {number} userId - User ID
+   * @param {number} rating - Rating (1-5)
+   * @param {string} review - Review text
+   * @returns {Promise<boolean>} True if successful
+   */
+  async addReview(tourId, userId, rating, review) {
+    const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
-      
+    
       // Check if user has already reviewed this tour
       const [existingReviews] = await connection.query(
         `SELECT id FROM tour_reviews WHERE tour_id = ? AND user_id = ?`,
@@ -624,100 +792,199 @@ class Tour {
     } finally {
       connection.release();
     }
-  }
+  },
   
-  static async addToWishlist(userId, tourId) {
+  /**
+   * Add tour to user's wishlist
+   * @param {number} userId - User ID
+   * @param {number} tourId - Tour ID
+   * @returns {Promise<boolean>} True if successful
+   */
+  async addToWishlist(userId, tourId) {
+    const connection = await pool.getConnection();
     try {
-      await db.query(
+      await connection.beginTransaction();
+    
+      // Check if already in wishlist
+      const [existing] = await connection.query(
+        `SELECT id FROM wishlists WHERE user_id = ? AND tour_id = ?`,
+        [userId, tourId]
+      );
+      
+      if (existing.length > 0) {
+        await connection.commit();
+        return true;
+      }
+      
+      await connection.query(
         `INSERT INTO wishlists (user_id, tour_id) VALUES (?, ?)`,
         [userId, tourId]
       );
       
+      await connection.commit();
+      
       return true;
     } catch (error) {
-      // If duplicate entry error, the tour is already in the wishlist
-      if (error.code === 'ER_DUP_ENTRY') {
-        return true;
-      }
+      await connection.rollback();
       throw error;
+    } finally {
+      connection.release();
     }
-  }
+  },
   
-  static async removeFromWishlist(userId, tourId) {
-    const [result] = await db.query(
-      `DELETE FROM wishlists WHERE user_id = ? AND tour_id = ?`,
-      [userId, tourId]
+  /**
+   * Remove tour from user's wishlist
+   * @param {number} userId - User ID
+   * @param {number} tourId - Tour ID
+   * @returns {Promise<boolean>} True if successful
+   */
+  async removeFromWishlist(userId, tourId) {
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+    
+      const [result] = await connection.query(
+        `DELETE FROM wishlists WHERE user_id = ? AND tour_id = ?`,
+        [userId, tourId]
+      );
+      
+      await connection.commit();
+      
+      return result.affectedRows > 0;
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  },
+  
+  /**
+   * Get user's wishlist
+   * @param {number} userId - User ID
+   * @returns {Promise<Array>} Array of tours
+   */
+  async getWishlist(userId) {
+    const [rows] = await pool.query(
+      `SELECT t.*, 
+              (SELECT image_path FROM tour_images WHERE tour_id = t.id AND is_cover = 1 LIMIT 1) as cover_image, 
+              w.created_at as added_to_wishlist_at 
+       FROM wishlists w 
+       JOIN tours t ON w.tour_id = t.id 
+       WHERE w.user_id = ? 
+       ORDER BY w.created_at DESC`,
+      [userId]
     );
-    
-    return result.affectedRows > 0;
-  }
-  
-  static async getUserWishlist(userId) {
-    const [rows] = await db.query(`
-      SELECT 
-        t.*,
-        (SELECT image_path FROM tour_images WHERE tour_id = t.id AND is_cover = 1 LIMIT 1) as cover_image,
-        w.created_at as added_to_wishlist_at
-      FROM wishlists w
-      JOIN tours t ON w.tour_id = t.id
-      WHERE w.user_id = ?
-      ORDER BY w.created_at DESC
-    `, [userId]);
-    
     return rows;
-  }
+  },
   
-  static async checkWishlist(userId, tourId) {
-    const [rows] = await db.query(
+  /**
+   * Check if tour is in user's wishlist
+   * @param {number} userId - User ID
+   * @param {number} tourId - Tour ID
+   * @returns {Promise<boolean>} True if in wishlist
+   */
+  async isInWishlist(userId, tourId) {
+    const [rows] = await pool.query(
       `SELECT id FROM wishlists WHERE user_id = ? AND tour_id = ?`,
       [userId, tourId]
     );
-    
     return rows.length > 0;
-  }
+  },
   
-  static async getTourStats() {
-    const [rows] = await db.query(`
-      SELECT
-        COUNT(*) as total_tours,
-        AVG(price) as average_price,
-        MIN(price) as min_price,
-        MAX(price) as max_price,
-        SUM(rating_quantity) as total_reviews,
-        AVG(rating) as average_rating
-      FROM tours
-    `);
-    
+  /**
+   * Get tour statistics
+   * @returns {Promise<Object>} Statistics object
+   */
+  async getStats() {
+    const [rows] = await pool.query(
+      `SELECT 
+        COUNT(*) as total_tours, 
+        AVG(price) as average_price, 
+        MIN(price) as min_price, 
+        MAX(price) as max_price, 
+        SUM(rating_quantity) as total_reviews, 
+        AVG(rating) as average_rating, 
+        (SELECT COUNT(*) FROM tours WHERE featured = 1) as featured_tours, 
+        (SELECT COUNT(*) FROM tour_reviews) as total_reviews_all 
+       FROM tours`
+    );
     return rows[0];
-  }
+  },
   
-  static async getTopRatedTours(limit = 5) {
-    const [rows] = await db.query(`
-      SELECT 
-        t.*,
-        (SELECT image_path FROM tour_images WHERE tour_id = t.id AND is_cover = 1 LIMIT 1) as cover_image
-      FROM tours t
-      WHERE t.rating_quantity > 0
-      ORDER BY t.rating DESC, t.rating_quantity DESC
-      LIMIT ?
-    `, [limit]);
-    
+  /**
+   * Get top rated tours
+   * @param {number} limit - Number of tours to return
+   * @returns {Promise<Array>} Array of tours
+   */
+  async getTopRated(limit = 5) {
+    const [rows] = await pool.query(
+      `SELECT t.*, 
+              (SELECT image_path FROM tour_images WHERE tour_id = t.id AND is_cover = 1 LIMIT 1) as cover_image 
+       FROM tours t 
+       WHERE t.rating_quantity > 0 
+       ORDER BY t.rating DESC, t.rating_quantity DESC 
+       LIMIT ?`,
+      [limit]
+    );
+    return rows;
+  },
+  
+  /**
+   * Get featured tours
+   * @param {number} limit - Number of tours to return
+   * @returns {Promise<Array>} Array of tours
+   */
+  async getFeatured(limit = 5) {
+    const [rows] = await pool.query(
+      `SELECT t.*, 
+              (SELECT image_path FROM tour_images WHERE tour_id = t.id AND is_cover = 1 LIMIT 1) as cover_image 
+       FROM tours t 
+       WHERE t.featured = 1 
+       ORDER BY t.created_at DESC 
+       LIMIT ?`,
+      [limit]
+    );
+    return rows;
+  },
+  
+  /**
+   * Get all regions
+   * @returns {Promise<Array>} Array of regions
+   */
+  async getRegions() {
+    const [rows] = await pool.query('SELECT * FROM regions ORDER BY name');
+    return rows;
+  },
+  
+  /**
+   * Get all vehicle types
+   * @returns {Promise<Array>} Array of vehicle types
+   */
+  async getVehicleTypes() {
+    const [rows] = await pool.query('SELECT * FROM vehicle_types ORDER BY name');
+    return rows;
+  },
+  
+  /**
+   * Get all service categories with their services
+   * @returns {Promise<Array>} Array of service categories
+   */
+  async getServiceCategories() {
+    const [rows] = await pool.query(
+      `SELECT sc.*, 
+              (SELECT JSON_ARRAYAGG(
+                JSON_OBJECT(
+                  'id', s.id, 
+                  'name', s.name, 
+                  'description', s.description
+                )
+              ) FROM services s WHERE s.category_id = sc.id) as services 
+       FROM service_categories sc 
+       ORDER BY sc.name`
+    );
     return rows;
   }
-  
-  static async getFeaturedTours(limit = 5) {
-    const [rows] = await db.query(`
-      SELECT 
-        t.*,
-        (SELECT image_path FROM tour_images WHERE tour_id = t.id AND is_cover = 1 LIMIT 1) as cover_image
-      FROM tours t
-      WHERE t.featured = 1
-      ORDER BY t.created_at DESC
-      LIMIT ?
-    `, [limit]);
-    
-    return rows;
-  }
-}
+};
 
-module.exports = Tour;
+module.exports = tourModel;
