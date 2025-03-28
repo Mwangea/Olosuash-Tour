@@ -12,6 +12,7 @@ const {
   isNotAuthenticated,
   checkLoginAttempts 
 } = require('../middleware/auth');
+const { clientRedirectMiddleware } = require('../middleware/clientRedirectMiddleware');
 
 const router = express.Router();
 
@@ -36,7 +37,11 @@ router.get('/facebook',
 router.get('/facebook/callback', authController.facebookCallback);
 
 // Email verification
-router.get('/verify-email/:token', authController.verifyEmail);
+// Email verification with JSON response
+router.get('/verify-email/:token', 
+  authController.verifyEmail,
+  clientRedirectMiddleware()
+);
 
 // Password reset
 router.post('/forgot-password', validateForgotPassword, authController.forgotPassword);

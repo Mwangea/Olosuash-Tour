@@ -41,8 +41,8 @@ const signup = async (userData, host) => {
     auth_provider: 'local'
   });
 
-  // Generate verification URL
-  const verificationUrl = `${host}/api/auth/verify-email/${newUser.verification_token}`;
+  // Generate verification URL using frontend route
+  const verificationUrl = `${process.env.FRONTEND_URL}/verify-email/${newUser.verification_token}`;
 
   // Send verification email
   await sendVerificationEmail(newUser, verificationUrl);
@@ -136,16 +136,50 @@ const socialLogin = async (user, ipAddress, userAgent) => {
 };
 
 /**
- * Verify user email
+ * Verify email
  * @param {string} token - Verification token
- * @returns {boolean} Success status
+ * @returns {Object} Verification result
  */
 const verifyEmail = async (token) => {
-  const success = await userModel.verifyEmail(token);
-  if (!success) {
-    throw new AppError('Invalid or expired verification token', 400);
+ // console.log('Received verification token:', token); // Log the incoming token
+  
+  try {
+    if (!token || token === "undefined") {
+     // console.log('Token is missing or undefined');
+      return {
+        verified: false,
+        redirectUrl: `${process.env.FRONTEND_URL}/verify-email/failed`,
+        message: 'Invalid verification token'
+      };
+    }
+
+    // Verify and update user's email
+    const user = await userModel.verifyEmail(token);
+    //console.log('User verification result:', user); // Log the user object
+
+    if (!user) {
+      console.log('No user found for this token');
+      return {
+        verified: false,
+        redirectUrl: `${process.env.FRONTEND_URL}/verify-email/failed`,
+        message: 'Email verification failed. Token may be invalid or expired.'
+      };
+    }
+
+    //console.log('Email verification successful for user:', user.email);
+    return {
+      verified: true,
+      redirectUrl: `${process.env.FRONTEND_URL}/verify-email/success`,
+      message: 'Email verified successfully'
+    };
+  } catch (error) {
+    //console.error('Email verification error:', error);
+    return {
+      verified: false,
+      redirectUrl: `${process.env.FRONTEND_URL}/verify-email/failed`,
+      message: 'An unexpected error occurred during email verification'
+    };
   }
-  return true;
 };
 
 /**
@@ -162,8 +196,8 @@ const forgotPassword = async (email, host) => {
     // Get user
     const user = await userModel.findByEmail(email);
 
-    // Generate reset URL
-    const resetUrl = `${host}/api/auth/reset-password/${resetToken}`;
+    // Generate reset URL using frontend route
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
 
     // Send password reset email
     await sendPasswordResetEmail(user, resetUrl);

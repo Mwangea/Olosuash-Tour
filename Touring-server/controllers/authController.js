@@ -9,8 +9,7 @@ const { AppError } = require('../middleware/errorHandler');
  */
 const signup = async (req, res, next) => {
   try {
-    const host = `${req.protocol}://${req.get('host')}`;
-    const result = await authService.signup(req.body, host);
+    const result = await authService.signup(req.body);
 
     res.status(201).json({
       status: 'success',
@@ -100,64 +99,34 @@ const facebookCallback = (req, res, next) => {
  * @access  Public
  */
 const verifyEmail = async (req, res, next) => {
-    try {
-      const { token } = req.params;
-      
-      // Log token for debugging
-      console.log("Verification token received:", token);
-      
-      if (token === "undefined") {
-        throw new Error("Verification token is undefined");
+  try {
+    const { token } = req.params;
+    
+    // Call service method to verify email
+    const result = await authService.verifyEmail(token);
+
+    // For API response
+    res.status(200).json({
+      status: result.verified ? 'success' : 'fail',
+      message: result.message,
+      data: {
+        verified: result.verified,
+        redirectUrl: result.redirectUrl
       }
-      
-      await authService.verifyEmail(token);
-  
-      // Return HTML success message for testing
-      res.status(200).send(`
-        <html>
-          <head>
-            <title>Email Verification Successful</title>
-            <style>
-              body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
-              .success { color: green; }
-              .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <h1 class="success">Email Verification Successful!</h1>
-              <p>Your email has been successfully verified. You can now log in to your account.</p>
-              <p>This is a temporary message for testing. In production, you will be redirected to the application.</p>
-            </div>
-          </body>
-        </html>
-      `);
-    } catch (error) {
-      console.error("Email verification error:", error.message);
-      
-      // Return HTML error message for testing
-      res.status(400).send(`
-        <html>
-          <head>
-            <title>Email Verification Failed</title>
-            <style>
-              body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
-              .error { color: red; }
-              .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <h1 class="error">Email Verification Failed</h1>
-              <p>We could not verify your email. The verification link may be invalid or expired.</p>
-              <p>Error: ${error.message}</p>
-              <p>This is a temporary message for testing. In production, you will be redirected to the application.</p>
-            </div>
-          </body>
-        </html>
-      `);
-    }
-  };
+    });
+
+  } catch (error) {
+    // Fallback error handling
+    res.status(400).json({
+      status: 'fail',
+      message: 'Email verification failed',
+      data: {
+        verified: false,
+        redirectUrl: `${process.env.FRONTEND_URL}/verify-email/failed`
+      }
+    });
+  }
+};
 
 /**
  * @desc    Forgot password
@@ -167,9 +136,8 @@ const verifyEmail = async (req, res, next) => {
 const forgotPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
-    const host = `${req.protocol}://${req.get('host')}`;
     
-    await authService.forgotPassword(email, host);
+    await authService.forgotPassword(email);
 
     // Always return success to prevent email enumeration
     res.status(200).json({

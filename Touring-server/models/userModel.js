@@ -12,62 +12,71 @@ const userModel = {
    */
 
     async create(userData) {
-        const connection = await pool.getConnection();
+      const connection = await pool.getConnection();
       
-        try {
-          await connection.beginTransaction();
-      
-          // Hash password if provided
-          if (userData.password) {
-            userData.password = await bcrypt.hash(userData.password, 12);
-          }
-      
-          // Generate verification token for email verification
-          if (!userData.is_verified) {
-            userData.verification_token = crypto.randomBytes(32).toString('hex');
-          }
-          
-          // Execute insert query with role included
-          const [result] = await connection.query(
-            'INSERT INTO users (username, email, password, profile_picture, phone_number, auth_provider, auth_provider_id, verification_token, is_verified, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [
-              userData.username,
-              userData.email,
-              userData.password || null,
-              userData.profile_picture || null,
-              userData.phone_number || null,
-              userData.auth_provider || 'local',
-              userData.auth_provider_id || null,
-              userData.verification_token || null,
-              userData.is_verified || false,
-              userData.role || 'user' // Default to 'user' if not specified
-            ]
-          );
-          
-          const userId = result.insertId;
-          
-          // Create user profile
-          await connection.query(
-            'INSERT INTO user_profiles (user_id) VALUES (?)',
-            [userId]
-          );
-          
-          // Get the created user
-          const [users] = await connection.query(
-            'SELECT id, username, email, profile_picture, role, auth_provider, is_verified, verification_token, created_at FROM users WHERE id = ?',
-            [userId]
-          );
-          
-          await connection.commit();
-          
-          return users[0];
-        } catch (error) {
-          await connection.rollback();
-          throw error;
-        } finally {
-          connection.release();
+      try {
+        await connection.beginTransaction();
+  
+        // Hash password if provided
+        if (userData.password) {
+          userData.password = await bcrypt.hash(userData.password, 12);
         }
-      },
+  
+        // Generate verification token and expiration (24 hours) for new unverified users
+        if (!userData.is_verified) {
+          userData.verification_token = crypto.randomBytes(32).toString('hex');
+          userData.verification_token_expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+        }
+  
+        // Execute insert query with all fields
+        const [result] = await connection.query(
+          `INSERT INTO users (
+            username, email, password, profile_picture, phone_number, 
+            auth_provider, auth_provider_id, verification_token, 
+            verification_token_expires, is_verified, role
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            userData.username,
+            userData.email,
+            userData.password || null,
+            userData.profile_picture || null,
+            userData.phone_number || null,
+            userData.auth_provider || 'local',
+            userData.auth_provider_id || null,
+            userData.verification_token || null,
+            userData.verification_token_expires || null,
+            userData.is_verified || false,
+            userData.role || 'user'
+          ]
+        );
+        
+        const userId = result.insertId;
+        
+        // Create user profile
+        await connection.query(
+          'INSERT INTO user_profiles (user_id) VALUES (?)',
+          [userId]
+        );
+        
+        // Get the created user
+        const [users] = await connection.query(
+          `SELECT 
+            id, username, email, profile_picture, role, 
+            auth_provider, is_verified, verification_token, 
+            verification_token_expires, created_at 
+          FROM users WHERE id = ?`,
+          [userId]
+        );
+        
+        await connection.commit();
+        return users[0];
+      } catch (error) {
+        await connection.rollback();
+        throw error;
+      } finally {
+        connection.release();
+      }
+    },
   
   /**
    * Find user by ID
@@ -131,28 +140,97 @@ const userModel = {
     return this.findById(userId);
   },
   
-  /**
-   * Verify user email
+/**
+   * Verify email using verification token
    * @param {string} token - Verification token
-   * @returns {Promise<boolean>} Success status
+   * @returns {Object|null} Verified user or null
    */
-  async verifyEmail(token) {
-    const [rows] = await pool.query(
-      'SELECT id FROM users WHERE verification_token = ?',
+async verifyEmail(token) {
+  const connection = await pool.getConnection();
+  
+  try {
+    await connection.beginTransaction();
+
+    console.log(`Attempting to verify token: ${token}`);
+
+    // Simplified query without separate NOW() check
+    const [tokenRows] = await connection.query(
+      `SELECT id, email, is_verified 
+       FROM users 
+       WHERE verification_token = ? 
+         AND (verification_token_expires > NOW() OR verification_token_expires IS NULL)`,
       [token]
     );
-    
-    if (!rows.length) {
-      return false;
+
+    if (!tokenRows.length) {
+      console.log('No valid token found');
+      await connection.rollback();
+      return null;
     }
-    
-    await pool.query(
-      'UPDATE users SET is_verified = TRUE, verification_token = NULL WHERE id = ?',
-      [rows[0].id]
+
+    const user = tokenRows[0];
+
+    if (user.is_verified) {
+      console.log('User already verified');
+      await connection.rollback();
+      return null;
+    }
+
+    await connection.query(
+      `UPDATE users 
+       SET is_verified = TRUE, 
+           verification_token = NULL, 
+           verification_token_expires = NULL 
+       WHERE id = ?`,
+      [user.id]
     );
+
+    await connection.commit();
+    console.log(`Successfully verified user ${user.email}`);
+    return { id: user.id, email: user.email };
     
-    return true;
-  },
+  } catch (error) {
+    await connection.rollback();
+    console.error('Verification failed:', error);
+    return null;
+  } finally {
+    connection.release();
+  }
+},
+
+/**
+ * Create verification token for user
+ * @param {number} userId - User ID
+ * @returns {string} Verification token
+ */
+async createVerificationToken(userId) {
+  const connection = await pool.getConnection();
+  
+  try {
+    await connection.beginTransaction();
+
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    await connection.query(
+      `UPDATE users 
+      SET 
+        verification_token = ?,
+        verification_token_expires = ?,
+        is_verified = FALSE
+      WHERE id = ?`,
+      [verificationToken, expiresAt, userId]
+    );
+
+    await connection.commit();
+    return verificationToken;
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+},
   
   /**
    * Generate password reset token
@@ -551,7 +629,9 @@ const userModel = {
     } finally {
       connection.release();
     }
-  }
+  },
+
+
 };
 
 module.exports = userModel;

@@ -22,7 +22,7 @@ const isValidPassword = (password) => {
   if (!password || typeof password !== 'string') return false;
   
   // Minimum 8 characters, at least one uppercase letter, one lowercase letter, one number
-  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/.test(password);
+  return /^(?=.*[a-zA-Z])(?=.*\d).{6,}$/.test(password);
 };
 
 // Validate sign up data

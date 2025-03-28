@@ -16,10 +16,18 @@ class AppError extends Error {
    * Handle MySQL duplicate entry errors
    */
   const handleDuplicateFieldsDB = (err) => {
-    // Extract field name from error message
-    const field = err.message.match(/key '([^']+)'/)[1].split('.')[1];
-    const message = `Duplicate value for ${field}. Please use another value.`;
-    return new AppError(message, 400);
+
+    // More robust handling of duplicate entry errors
+  if (err.message.includes('users.email')) {
+    return new AppError('Email already in use', 400);
+  }
+  if (err.message.includes('users.username')) {
+    return new AppError('Username already in use', 400);
+  }
+
+    // Fallback for other potential duplicate fields
+  const field = err.message.match(/key '([^']+)'/)?.[1]?.split('.')[1] || 'field';
+  return new AppError(`Duplicate value for ${field}. Please use another value.`, 400);
   };
   
   /**
