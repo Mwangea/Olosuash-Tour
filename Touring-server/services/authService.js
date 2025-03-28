@@ -158,7 +158,7 @@ const verifyEmail = async (token) => {
     //console.log('User verification result:', user); // Log the user object
 
     if (!user) {
-      console.log('No user found for this token');
+     // console.log('No user found for this token');
       return {
         verified: false,
         redirectUrl: `${process.env.FRONTEND_URL}/verify-email/failed`,

@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Eye, EyeOff,  Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { authApi } from '../api/authApi';
-
-
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -40,19 +38,55 @@ const Login = () => {
       }
     } catch (error: unknown) {
       // Handle different types of errors
-      if (error instanceof Error) {
-        const errorMessage = error.message || 'Login failed';
-        toast.error(errorMessage);
+      let errorMessage = 'Login failed';
 
-        // Special handling for email verification
-        if (errorMessage.includes('verify your email')) {
-          toast.error('Please verify your email before logging in');
+      if (error instanceof Error) {
+        // Check if error has a response from axios
+        if ('response' in error && error.response) {
+          const response = error.response as { status: number; data: { message: string } };
+          const { status, data } = response;
+
+          switch (status) {
+            case 400:
+              errorMessage = data.message || 'Invalid login credentials';
+              break;
+            case 401:
+              errorMessage = 'Incorrect email or password';
+              break;
+            case 403:
+              if (data.message.includes('verify')) {
+                errorMessage = 'Please verify your email before logging in';
+                // Optional: Add a way to resend verification email
+                toast.error(errorMessage, {
+                  duration: 4000,
+                  position: 'top-right',
+                });
+              } else {
+                errorMessage = 'Access denied';
+              }
+              break;
+            case 429:
+              errorMessage = 'Too many login attempts. Please try again later.';
+              break;
+            case 500:
+              errorMessage = 'Server error. Please try again later.';
+              break;
+            default:
+              errorMessage = data.message || 'An unexpected error occurred';
+          }
+        } else if (error.message) {
+          // Fallback to error message if available
+          errorMessage = error.message;
         }
       } else if (typeof error === 'object' && error !== null && 'request' in error) {
-        toast.error('No response from server. Please check your connection.');
-      } else {
-        toast.error('An unexpected error occurred');
+        errorMessage = 'No response from server. Please check your connection.';
       }
+
+      // Display the error message
+      toast.error(errorMessage, {
+        duration: 3000,
+        position: 'top-right',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -65,7 +99,7 @@ const Login = () => {
         <div className="flex items-center justify-center p-6 md:p-10 lg:p-12">
           <div className="w-full max-w-md">
             <div className="flex items-center gap-2 mb-6">
-            <img src="/title-logo.png" alt="Logo" className="w-12 h-12" />
+              <img src="/title-logo.png" alt="Logo" className="w-12 h-12" />
               <h1 className="text-2xl font-bold text-gray-900">Olosuashi Tours</h1>
             </div>
             
@@ -162,7 +196,7 @@ const Login = () => {
           className="hidden lg:block bg-cover bg-center relative"
           style={{ backgroundImage: "url('/zebra.jpg')" }}
         >
-          <div className="absolute inset-0 bg-black  flex items-center justify-center p-8" style={{ opacity: 0.7 }} >
+          <div className="absolute inset-0 bg-black flex items-center justify-center p-8" style={{ opacity: 0.7 }} >
             <div className="text-white text-center">
               <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-3">Zebras Quenching Their Thirst in Amboseli</h2>
               <p className="text-sm md:text-base"> Watch herds of zebras gather at watering holes, enjoying a moment of peace with the breathtaking backdrop of Mount Kilimanjaro.</p>

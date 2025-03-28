@@ -46,10 +46,10 @@ const ResetPassword = () => {
       setTimeout(() => {
         navigate('/signin');
       }, 3000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Reset password error:', error);
 
-      const errorMessage = error.response?.data?.message || 
+      const errorMessage = error instanceof Error ? error.message : 
                            'Failed to reset password. Please try again.';
       toast.error(errorMessage);
     } finally {

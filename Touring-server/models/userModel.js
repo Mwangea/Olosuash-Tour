@@ -151,7 +151,7 @@ async verifyEmail(token) {
   try {
     await connection.beginTransaction();
 
-    console.log(`Attempting to verify token: ${token}`);
+    //console.log(`Attempting to verify token: ${token}`);
 
     // Simplified query without separate NOW() check
     const [tokenRows] = await connection.query(
@@ -163,7 +163,7 @@ async verifyEmail(token) {
     );
 
     if (!tokenRows.length) {
-      console.log('No valid token found');
+    //  console.log('No valid token found');
       await connection.rollback();
       return null;
     }
@@ -171,7 +171,7 @@ async verifyEmail(token) {
     const user = tokenRows[0];
 
     if (user.is_verified) {
-      console.log('User already verified');
+    //  console.log('User already verified');
       await connection.rollback();
       return null;
     }
@@ -186,7 +186,7 @@ async verifyEmail(token) {
     );
 
     await connection.commit();
-    console.log(`Successfully verified user ${user.email}`);
+    //console.log(`Successfully verified user ${user.email}`);
     return { id: user.id, email: user.email };
     
   } catch (error) {

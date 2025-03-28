@@ -205,11 +205,112 @@ const getUserStats = async (req, res, next) => {
   }
 };
 
+/**
+ * @desc    Get admin profile
+ * @route   GET /api/admin/profile
+ * @access  Admin
+ */
+const getAdminProfile = async (req, res, next) => {
+  try {
+    // Assuming the admin is already authenticated and req.user contains the admin's ID
+    const userId = req.user.id;
+    
+    // Fetch admin profile details
+    const user = await userModel.findById(userId);
+    
+    if (!user) {
+      return next(new AppError('Admin profile not found', 404));
+    }
+    
+    // Remove sensitive information
+    const { password, ...safeUserData } = user;
+    
+    res.status(200).json({
+      status: 'success',
+      data: {
+        profile: {
+          id: safeUserData.id,
+          username: safeUserData.username,
+          email: safeUserData.email,
+          profile_picture: safeUserData.profile_picture || null,
+          role: safeUserData.role
+        }
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Update admin profile
+ * @route   PATCH /api/admin/profile
+ * @access  Admin
+ */
+const updateAdminProfile = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    
+    // Check if user exists
+    const userExists = await userModel.findById(userId);
+    if (!userExists) {
+      return next(new AppError('Admin profile not found', 404));
+    }
+    
+    // Prepare update data
+    const updateData = { ...req.body };
+    
+    // Handle profile picture upload
+    if (req.file) {
+      // Delete old profile picture if it exists
+      if (userExists.profile_picture) {
+        const oldPicturePath = path.join(__dirname, '..', userExists.profile_picture);
+        if (fs.existsSync(oldPicturePath)) {
+          fs.unlinkSync(oldPicturePath);
+        }
+      }
+      
+      // Set the new profile picture path
+      updateData.profile_picture = `/uploads/profile-pictures/${req.file.filename}`;
+    }
+    
+    // Prevent updating certain fields
+    delete updateData.role;
+    delete updateData.is_verified;
+    
+    // Update user profile
+    const updatedUser = await userModel.updateUser(userId, updateData);
+    
+    // Remove sensitive information
+    const { password, ...safeUserData } = updatedUser;
+    
+    res.status(200).json({
+      status: 'success',
+      data: {
+        profile: safeUserData
+      }
+    });
+  } catch (error) {
+    // Handle specific error cases
+    if (error.message.includes("Username") && error.message.includes("already taken")) {
+      return next(new AppError(error.message, 400));
+    }
+    if (error.message.includes("Email") && error.message.includes("already in use")) {
+      return next(new AppError(error.message, 400));
+    }
+    
+    next(error);
+  }
+};
+
 module.exports = {
   createAdmin,
   getAllUsers,
   getUserById,
   updateUser,
   deleteUser,
-  getUserStats
+  getUserStats,
+  updateAdminProfile,
+  getAdminProfile
+
 };

@@ -6,6 +6,7 @@ const passport = require('passport');
 const rateLimit = require('express-rate-limit');
 const xss = require('xss-clean');
 const cookieParser = require('cookie-parser');
+const path = require('path');
 
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
@@ -20,19 +21,36 @@ require('./config/passport');
 
 const app = express();
 
-// Set security HTTP headers
-app.use(helmet());
-
-// Implement CORS
-app.use(cors({
-  origin: 'http://localhost:5173',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+// Comprehensive CORS configuration
+const corsOptions = {
+  origin: [
+    'http://localhost:3000',   // React development server
+    'http://localhost:5173',   // Vite development server
+    'http://localhost:8000'    // Backend server
+  ],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'Access-Control-Allow-Headers',
+    'Access-Control-Allow-Methods'
+  ],
   credentials: true,
-  // These are important for redirects
   preflightContinue: false,
   optionsSuccessStatus: 204
-}));
+};
+
+// Apply CORS
+app.use(cors(corsOptions));
+
+// Handle OPTIONS requests explicitly
+app.options('*', cors(corsOptions));
+
+// Debugging middleware
+
+
+// Set security HTTP headers
+app.use(helmet());
 
 // Rate limiting
 const limiter = rateLimit({
@@ -43,7 +61,7 @@ const limiter = rateLimit({
 
 app.use('/api', limiter);
 
-// Body parser
+// Body parser for JSON and urlencoded
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
@@ -62,7 +80,7 @@ if (process.env.NODE_ENV === 'development') {
 app.use(passport.initialize());
 
 // Serve static files
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
 app.use('/api/auth', authRoutes);

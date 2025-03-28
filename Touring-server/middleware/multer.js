@@ -36,7 +36,9 @@ const heroStorage = multer.diskStorage({
   filename: function(req, file, cb) {
     const timestamp = Date.now();
     const fileExt = path.extname(file.originalname);
-    cb(null, `hero-slide-${timestamp}${fileExt}`);
+    // Store just the filename, not the full path
+    const filename = `hero-slide-${timestamp}${fileExt}`;
+    cb(null, filename);
   }
 });
 
@@ -50,12 +52,23 @@ const imageFileFilter = (req, file, cb) => {
   }
 };
 
-// Hero image specific file filter
+// Hero image specific file filter with expanded support
 const heroImageFileFilter = (req, file, cb) => {
-  // More restrictive filter for hero images
-  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+  // More inclusive filter for hero images
+  const allowedTypes = [
+    'image/jpeg', 
+    'image/png', 
+    'image/webp', 
+    'image/gif', 
+    'image/avif', 
+    'image/tiff'
+  ];
+
   if (!allowedTypes.includes(file.mimetype)) {
-    return cb(new AppError('Invalid file type. Only JPEG, PNG, and WebP are allowed for hero images.', 400), false);
+    return cb(new AppError(
+      'Invalid file type. Allowed types: JPEG, PNG, WebP, GIF, AVIF, TIFF', 
+      400
+    ), false);
   }
 
   cb(null, true);

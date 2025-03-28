@@ -15,6 +15,10 @@ router.use(restrictTo('admin'));
 //create admin route
 router.post('/create', validateSignUp, adminController.createAdmin);
 
+// Admin profile routes
+router.get('/profile', adminController.getAdminProfile);
+router.patch('/profile', uploadProfilePicture, adminController.updateAdminProfile);
+
 // User management routes
 router.get('/users', adminController.getAllUsers);
 router.get('/users/stats', adminController.getUserStats);

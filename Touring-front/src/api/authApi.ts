@@ -1,8 +1,8 @@
-// src/api/auth.ts
+
 import { api } from './axios';
 import axios from 'axios';
 
-// Types
+
 export interface User {
   id: string;
   username: string;
