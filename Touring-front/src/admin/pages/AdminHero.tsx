@@ -227,13 +227,15 @@ const AdminHero: React.FC = () => {
                   <div className="px-5 py-4 flex items-center justify-between border-b border-[#2D2B2A]/10">
                     <h3 className="text-xl font-semibold text-[#2D2B2A]">{slide.title}</h3>
                     <div className="flex space-x-2">
-                      <button 
+                      <button
+                      title='edit' 
                         onClick={() => prepareEditSlide(slide)}
                         className="text-[#2D2B2A] hover:text-[#8B4513] p-1.5 rounded-full hover:bg-[#8B4513]/10 transition-colors duration-200"
                       >
                         <Edit className="h-5 w-5" />
                       </button>
                       <button 
+                      title='delete'
                         onClick={() => slide.id && setSlideToDelete(slide.id)}
                         className="text-red-500 hover:text-red-700 p-1.5 rounded-full hover:bg-red-500/10 transition-colors duration-200"
                       >
@@ -309,6 +311,7 @@ const AdminHero: React.FC = () => {
                     {currentSlide.id ? 'Edit Hero Slide' : 'Add New Hero Slide'}
                   </h2>
                   <button 
+                  title='open'
                     onClick={() => setIsDialogOpen(false)}
                     className="text-white hover:bg-[#6B3E23] p-2 rounded-full transition-colors duration-200"
                   >
