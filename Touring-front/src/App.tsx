@@ -12,9 +12,14 @@ import { AuthProvider } from './context/AuthContext';
 import UpdateProfilePage from './admin/pages/AdminProfilePage';
 import AdminHero from './admin/pages/AdminHero';
 import Home from './pages/Home';
-import { Header } from './components/Header';
+
 import { Footer } from './components/Footer';
 import ContactPage from './pages/Contact';
+import SustainabilityPage from './pages/SustainabilityPage';
+import AboutPage from './pages/OlosuashiTours';
+import Header from './components/Header';
+import SafariGuides from './pages/SafariGuides';
+import FAQPage from './pages/FAQPage';
 
 // Create a User Layout component with Header and Footer
 const UserLayout = ({ children }: { children: React.ReactNode }) => {
@@ -75,6 +80,14 @@ function App() {
             {/* User Routes - with header/footer */}
             <Route path='/' element={<UserLayout><Home /></UserLayout>} />
             <Route path='/contact' element={<UserLayout><ContactPage /></UserLayout>} />
+            <Route path='/about/sustainability' element={<UserLayout><SustainabilityPage /></UserLayout>} />
+            <Route path='/about/olosuashi-tours' element={<UserLayout><AboutPage /></UserLayout>} />
+            <Route path='/about/safari-guide' element={<UserLayout><SafariGuides /></UserLayout>} />
+            <Route path='/faq' element={<UserLayout><FAQPage /></UserLayout>} />
+
+
+
+
             {/* Add more user routes here with the UserLayout */}
 
             {/* Catch-all route */}

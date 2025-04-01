@@ -4,10 +4,10 @@ import {
   MapPin,
   Clock,
   Facebook,
-  Twitter,
   Instagram,
   Linkedin,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -39,12 +39,6 @@ export function Footer() {
                 <Facebook className="h-5 w-5" />
               </a>
               <a
-                href="#"
-                className="text-gray-400 hover:text-amber-500 transition-colors"
-              >
-                <Twitter className="h-5 w-5" />
-              </a>
-              <a
                 href="https://www.instagram.com/olosuashi"
                 className="text-gray-400 hover:text-amber-500 transition-colors"
               >
@@ -66,68 +60,68 @@ export function Footer() {
             </h3>
             <ul className="space-y-2">
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/"
                   className="text-gray-400 hover:text-amber-500 transition-colors"
                 >
                   Home
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/about"
                   className="text-gray-400 hover:text-amber-500 transition-colors"
                 >
                   About Us
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/kenya-safaris"
                   className="text-gray-400 hover:text-amber-500 transition-colors"
                 >
                   Kenya Safaris
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/tanzania-safaris"
                   className="text-gray-400 hover:text-amber-500 transition-colors"
                 >
                   Tanzania Safaris
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/mountain-trekking"
                   className="text-gray-400 hover:text-amber-500 transition-colors"
                 >
                   Mountain Trekking
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/cultural-experiences"
                   className="text-gray-400 hover:text-amber-500 transition-colors"
                 >
                   Cultural Experiences
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/travel-guides"
                   className="text-gray-400 hover:text-amber-500 transition-colors"
                 >
                   Travel Guides
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="contact"
+                <Link
+                  to="/contact"
                   className="text-gray-400 hover:text-amber-500 transition-colors"
                 >
                   Contact Us
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -139,18 +133,18 @@ export function Footer() {
             </h3>
             <ul className="space-y-3">
               <li className="flex items-start gap-3">
-                <MapPin className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <MapPin className="h-5 w-5 bg-[#8B6B3D] flex-shrink-0 mt-0.5" />
                 <span className="text-sm">
                   123 Safari Avenue, Nairobi, Kenya
                 </span>
               </li>
               <li className="flex items-center gap-3">
                 <a
-                  href="tel:+254794556500"
+                  href="tel:+254708414577"
                   className="flex items-center gap-3 hover:underline"
                 >
-                  <Phone className="h-5 w-5 text-amber-600 flex-shrink-0" />
-                  <span className="text-sm">+254 794556500</span>
+                  <Phone className="h-5 w-5 bg-[#8B6B3D] flex-shrink-0" />
+                  <span className="text-sm">+254 708414577</span>
                 </a>
               </li>
               <li className="flex items-center gap-3">
@@ -158,13 +152,13 @@ export function Footer() {
                   href="mailto:info@olosuashi.com"
                   className="flex items-center gap-3 hover:underline"
                 >
-                  <Mail className="h-5 w-5 text-amber-600 flex-shrink-0" />
+                  <Mail className="h-5 w-5 bg-[#8B6B3D] flex-shrink-0" />
                   <span className="text-sm">info@olosuashi.com</span>
                 </a>
               </li>
 
               <li className="flex items-start gap-3">
-                <Clock className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <Clock className="h-5 w-5 bg-[#8B6B3D] flex-shrink-0 mt-0.5" />
                 <span className="text-sm">
                   Monday - Friday: 8:00 AM - 6:00 PM
                   <br />
@@ -195,7 +189,7 @@ export function Footer() {
               </div>
               <button
                 type="submit"
-                className="w-full bg-amber-700 hover:bg-amber-800 text-white py-2 px-4 rounded-md transition-colors font-medium"
+                className="w-full bg-[#8B6B3D] hover:bg-amber-800 text-white py-2 px-4 rounded-md transition-colors font-medium"
               >
                 Subscribe
               </button>
@@ -241,18 +235,30 @@ export function Footer() {
               &copy; {currentYear} Olosuashi Tours. All rights reserved.
             </div>
             <div className="flex flex-wrap justify-center gap-4 md:gap-6">
-              <a href="#" className="hover:text-amber-500 transition-colors">
+              <Link
+                to="/terms"
+                className="hover:text-amber-500 transition-colors"
+              >
                 Terms & Conditions
-              </a>
-              <a href="#" className="hover:text-amber-500 transition-colors">
+              </Link>
+              <Link
+                to="/privacy"
+                className="hover:text-amber-500 transition-colors"
+              >
                 Privacy Policy
-              </a>
-              <a href="#" className="hover:text-amber-500 transition-colors">
+              </Link>
+              <Link
+                to="/cookies"
+                className="hover:text-amber-500 transition-colors"
+              >
                 Cookie Policy
-              </a>
-              <a href="#" className="hover:text-amber-500 transition-colors">
+              </Link>
+              <Link
+                to="/sitemap"
+                className="hover:text-amber-500 transition-colors"
+              >
                 Sitemap
-              </a>
+              </Link>
             </div>
           </div>
         </div>

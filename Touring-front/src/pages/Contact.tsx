@@ -15,6 +15,7 @@ import {
   FaChevronDown
 } from 'react-icons/fa';
 import { IoMdSend } from 'react-icons/io';
+import { Link } from "react-router-dom";
 
 type FormData = {
   name: string;
@@ -86,17 +87,18 @@ const ContactPage = () => {
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email';
     }
-    if (formData.phone && !/^[\]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/.test(formData.phone)) {
-      newErrors.phone = 'Please enter a valid phone number';
-    }
+    if (formData.phone && !/^\+?[1-9]\d{1,14}$/.test(formData.phone)) {
+        newErrors.phone = 'Please enter a valid phone number';
+      }
+      
     if (!formData.message.trim()) newErrors.message = 'Message is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleWhatsAppClick = () => {
-    const message = `Hello Olosuashi team,\n\nI'd like to inquire about:\n\nName: ${formData.name || 'Not provided'}\nEmail: ${formData.email || 'Not provided'}\nPhone: ${formData.phone || 'Not provided'}`;
-    window.open(`https://wa.me/1234567890?text=${encodeURIComponent(message)}`, '_blank');
+    const message = `Hello Olosuashi team,\n\nI'd like to inquire about:${formData.subject || 'Not provided'}\nName: ${formData.name || 'Not provided'}\nEmail: ${formData.email || 'Not provided'}\nPhone: ${formData.phone || 'Not provided'}\nMessage: ${formData.message || 'Not provided'}`;
+    window.open(`https://wa.me/0755854208?text=${encodeURIComponent(message)}`, '_blank');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -116,27 +118,40 @@ const ContactPage = () => {
     setSubmitStatus(null);
 
     setTimeout(() => {
-      const emailSubject = `[Olosuashi Contact] ${formData.subject}`;
-      const emailBody = `Name: ${formData.name}%0D%0AEmail: ${formData.email}%0D%0APhone: ${formData.phone}%0D%0A%0D%0AMessage:%0D%0A${formData.message}`;
+        const emailSubject = `[Olosuashi Contact] ${formData.subject}`;
       
-      window.location.href = `mailto:admin@olosuashi.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
-
-      setSubmitStatus({ 
-        success: true, 
-        message: 'Your message has been prepared in your email client. Please send it to complete the process.' 
-      });
-      setIsSubmitting(false);
+        const emailBody = `
+          Name: ${formData.name}
+          Email: ${formData.email}
+          Phone: ${formData.phone}
       
-      setTimeout(() => {
-        setFormData({
-          name: '',
-          email: '',
-          phone: '',
-          subject: 'General Inquiry',
-          message: ''
+          Message:
+          ${formData.message}
+        `.trim(); // Removes extra spaces at the start or end
+      
+        // Open default email client
+        window.location.href = `mailto:admin@olosuashi.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+      
+        // Show user feedback
+        setSubmitStatus({ 
+          success: true, 
+          message: 'Your message has been prepared in your email client. Please send it to complete the process.' 
         });
-      }, 3000);
-    }, 1500);
+      
+        setIsSubmitting(false);
+      
+        // Reset form after 3 seconds
+        setTimeout(() => {
+          setFormData({
+            name: '',
+            email: '',
+            phone: '',
+            subject: 'General Inquiry',
+            message: ''
+          });
+        }, 3000);
+      }, 1500);
+      
   };
 
   const toggleFaq = (index: number) => {
@@ -344,12 +359,12 @@ const ContactPage = () => {
                   <div>
                     <h3 className="font-bold text-gray-800 mb-1">Ready to Book Your Experience?</h3>
                     <p className="text-gray-600 text-sm mb-3">Secure your spot now for an unforgettable adventure with our easy online booking system.</p>
-                    <a
-                      href="/booking"
-                      className="inline-block bg-[#8B6B3D] hover:bg-[#6B4F2D] text-white text-sm font-medium py-2 px-4 rounded transition"
-                    >
-                      Book Now
-                    </a>
+                    <Link
+        to="/booking"
+        className="inline-block bg-[#8B6B3D] hover:bg-[#6B4F2D] text-white text-sm font-medium py-2 px-4 rounded transition"
+      >
+        Book Now
+      </Link>
                   </div>
                 </div>
               </div>
@@ -364,12 +379,12 @@ const ContactPage = () => {
                   <div>
                     <h3 className="font-bold text-gray-800 mb-1">Explore Our Tour Packages</h3>
                     <p className="text-gray-600 text-sm mb-3">Discover our curated selection of premium tours designed to give you the best experience.</p>
-                    <a
-                      href="/tours"
-                      className="inline-block bg-gray-800 hover:bg-black text-white text-sm font-medium py-2 px-4 rounded transition"
-                    >
-                      View Tours
-                    </a>
+                    <Link
+        to="/booking"
+        className="inline-block bg-[#8B6B3D] hover:bg-[#6B4F2D] text-white text-sm font-medium py-2 px-4 rounded transition"
+      >
+        Book Now
+      </Link>
                   </div>
                 </div>
               </div>
@@ -393,9 +408,9 @@ const ContactPage = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-800 text-sm">Our Location</h3>
-                    <p className="text-gray-600 text-sm">123 Resort Avenue<br />Luxury District, 10101</p>
+                    <p className="text-gray-600 text-sm">Moi Avenue<br />Floor 3, Opposite National Archives</p>
                     <a 
-                      href="https://maps.google.com?q=123+Resort+Avenue" 
+                      href="https://maps.app.goo.gl/sbpwhnSYNaZnMhKj8"
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="text-[#8B6B3D] hover:underline inline-block mt-1 text-xs"
@@ -412,10 +427,10 @@ const ContactPage = () => {
                   <div>
                     <h3 className="font-semibold text-gray-800 text-sm">Phone Numbers</h3>
                     <p className="text-gray-600 text-sm">
-                      <a href="tel:+1234567890" className="hover:text-[#8B6B3D] transition">+1 (234) 567-8900</a> (Main)
+                      <a href="tel:+1234567890" className="hover:text-[#8B6B3D] transition">+254 755 854 208</a> (Main)
                     </p>
                     <p className="text-gray-600 text-sm">
-                      <a href="tel:+1234567891" className="hover:text-[#8B6B3D] transition">+1 (234) 567-8901</a> (24/7 Support)
+                      <a href="tel:0708414577" className="hover:text-[#8B6B3D] transition">+254 708 414 577</a> (24/7 Support)
                     </p>
                   </div>
                 </div>
@@ -455,7 +470,7 @@ const ContactPage = () => {
 
               <div className="mt-5 bg-[#F5F0E6] p-3 rounded text-center">
                 <p className="text-sm text-[#8B6B3D] font-medium">
-                  <span className="text-lg">⏱️</span> Average response time: <span className="font-bold">under 2 hours</span>
+                  <span className="text-lg">⏱️</span> Average response time: <span className="font-bold">under 10mins</span>
                 </p>
               </div>
 
@@ -487,8 +502,9 @@ const ContactPage = () => {
                     </div>
                   </div>
                 )}
+                
                 <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3022.215573291234!2d-73.9878449241648!3d40.74844047138911!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c259a9b3117469%3A0xd134e199a405a163!2sEmpire%20State%20Building!5e0!3m2!1sen!2sus!4v1620000000000!5m2!1sen!2sus"
+                  src="https://www.google.com/maps/embed?pb=!1m12!1m8!1m3!1d13483.055593142177!2d36.8129539!3d-1.2792859!3m2!1i1024!2i768!4f13.1!2m1!1sstandard%20chartered%20office%20nairobi!5e1!3m2!1sen!2ske!4v1743243519393!5m2!1sen!2ske"
                   width="100%"
                   height="250"
                   style={{ border: 0 }}
@@ -500,7 +516,7 @@ const ContactPage = () => {
               </div>
               <div className="mt-3 grid grid-cols-2 gap-2">
                 <a 
-                  href="https://maps.google.com?q=123+Resort+Avenue" 
+                  href="https://maps.app.goo.gl/sbpwhnSYNaZnMhKj8" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="bg-gray-800 hover:bg-black text-white py-1.5 px-3 rounded flex items-center justify-center text-xs"
@@ -508,7 +524,7 @@ const ContactPage = () => {
                   <FaMapMarkerAlt className="mr-1" /> Open in Maps
                 </a>
                 <a 
-                  href="https://maps.google.com/directions?to=123+Resort+Avenue" 
+                  href="https://maps.app.goo.gl/iUJVX7bVnuhJVVcs9" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="bg-[#8B6B3D] hover:bg-[#6B4F2D] text-white py-1.5 px-3 rounded flex items-center justify-center text-xs"
@@ -549,12 +565,12 @@ const ContactPage = () => {
           </div>
 
           <div className="text-center mt-6">
-            <a 
-              href="/faq" 
+            <Link 
+             to="/faq"
               className="inline-block text-[#8B6B3D] hover:text-[#6B4F2D] font-medium transition"
             >
               View all FAQs →
-            </a>
+            </Link>
           </div>
         </div>
       </div>
