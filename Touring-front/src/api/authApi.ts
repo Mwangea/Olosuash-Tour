@@ -8,7 +8,7 @@ export interface User {
   username: string;
   email: string;
   role: string;
-  profile_picture?: string;
+  profile_picture?: string | null;
   auth_provider: string;
   is_verified: boolean;
 }

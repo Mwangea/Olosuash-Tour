@@ -54,7 +54,7 @@ class BookingModel {
       // Get full booking details
       const [booking] = await connection.query(
         `SELECT b.*, t.title AS tour_title, t.duration AS tour_duration,
-                u.name AS user_name, u.email AS user_email, u.phone AS user_phone
+                u.username AS user_name, u.email AS user_email, u.phone_number AS user_phone
          FROM bookings b
          JOIN tours t ON b.tour_id = t.id
          JOIN users u ON b.user_id = u.id
@@ -81,7 +81,7 @@ class BookingModel {
         `SELECT b.*, t.title AS tour_title, t.description AS tour_description,
                 t.price AS tour_price, t.discount_price AS tour_discount_price,
                 t.duration AS tour_duration, t.difficulty AS tour_difficulty,
-                u.name AS user_name, u.email AS user_email, u.phone AS user_phone
+                u.username AS user_name, u.email AS user_email, u.phone_number AS user_phone
          FROM bookings b
          JOIN tours t ON b.tour_id = t.id
          JOIN users u ON b.user_id = u.id
@@ -117,10 +117,10 @@ class BookingModel {
         [booking.tour_id]
       );
       
-      // Get status history
+      // Get status history - Updated to use username instead of name
       const [statusHistory] = await pool.query(
         `SELECT status, notes, created_at, 
-                CONCAT(u.name, ' (', u.role, ')') AS changed_by
+                CONCAT(u.username, ' (', u.role, ')') AS changed_by
          FROM booking_status_log l
          LEFT JOIN users u ON l.changed_by = u.id
          WHERE booking_id = ?
@@ -161,7 +161,7 @@ class BookingModel {
 
     let query = `
       SELECT b.*, t.title AS tour_title, t.duration AS tour_duration,
-             u.name AS user_name, u.email AS user_email
+             u.username AS user_name, u.email AS user_email
       FROM bookings b
       JOIN tours t ON b.tour_id = t.id
       JOIN users u ON b.user_id = u.id
@@ -180,7 +180,7 @@ class BookingModel {
     }
 
     if (search) {
-      query += ' AND (t.title LIKE ? OR u.name LIKE ? OR u.email LIKE ?)';
+      query += ' AND (t.title LIKE ? OR u.username LIKE ? OR u.email LIKE ?)';
       const searchTerm = `%${search}%`;
       params.push(searchTerm, searchTerm, searchTerm);
     }
@@ -221,7 +221,7 @@ class BookingModel {
     }
 
     if (search) {
-      countQuery += ' AND (t.title LIKE ? OR u.name LIKE ? OR u.email LIKE ?)';
+      countQuery += ' AND (t.title LIKE ? OR u.username LIKE ? OR u.email LIKE ?)';
       const searchTerm = `%${search}%`;
       countParams.push(searchTerm, searchTerm, searchTerm);
     }

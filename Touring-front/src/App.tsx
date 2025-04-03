@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useOutletContext } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Signup from './authPages/sign-upPage';
 import Login from './authPages/loginPage';
@@ -20,6 +20,12 @@ import AboutPage from './pages/OlosuashiTours';
 import Header from './components/Header';
 import SafariGuides from './pages/SafariGuides';
 import FAQPage from './pages/FAQPage';
+import Profile from './pages/Profile';
+import Bookings from './pages/Bookings';
+import Wishlist from './pages/wishlist';
+import ProfileOverview from './pages/ProfileOverview';
+import Settings from './pages/Settings';
+import { UserProfile } from './api/userApi';
 
 // Create a User Layout component with Header and Footer
 const UserLayout = ({ children }: { children: React.ReactNode }) => {
@@ -31,6 +37,15 @@ const UserLayout = ({ children }: { children: React.ReactNode }) => {
     </>
   );
 };
+
+function ProfileContextWrapper() {
+  const context = useOutletContext<{
+    profile: UserProfile;
+    setProfile: React.Dispatch<React.SetStateAction<UserProfile | null>>;
+  }>();
+  
+  return <ProfileOverview profile={context.profile} setProfile={context.setProfile} />;
+}
 
 function App() {
   return (
@@ -84,6 +99,19 @@ function App() {
             <Route path='/about/olosuashi-tours' element={<UserLayout><AboutPage /></UserLayout>} />
             <Route path='/about/safari-guide' element={<UserLayout><SafariGuides /></UserLayout>} />
             <Route path='/faq' element={<UserLayout><FAQPage /></UserLayout>} />
+            
+         
+            <Route path="/profile" element={<UserLayout><Profile /></UserLayout>}>
+  <Route index element={<ProfileContextWrapper />} />
+  <Route path="bookings" element={<Bookings />} />
+  <Route path="wishlist" element={<Wishlist />} />
+  <Route path="settings" element={<Settings />} />
+</Route>
+
+
+
+            
+
 
 
 

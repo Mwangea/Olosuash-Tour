@@ -1,7 +1,7 @@
 const Booking = require('../models/bookingModel');
 const { sendBookingConfirmationEmail, sendBookingStatusUpdateEmail } = require('../services/emailService');
 const { AppError } = require('../middleware/errorHandler');
-//const logger = require('../utils/logger');
+const logger = require('../utils/logger');
 
 // Create a new booking
 exports.createBooking = async (req, res, next) => {
