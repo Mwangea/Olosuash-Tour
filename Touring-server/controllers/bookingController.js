@@ -280,5 +280,6 @@ exports.getBookingStats = async (req, res, next) => {
   } catch (error) {
     logger.error(`Error getting booking stats: ${error.message}`);
     next(error);
-  }
+  };
+  
 };

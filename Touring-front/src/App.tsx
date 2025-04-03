@@ -26,6 +26,9 @@ import Wishlist from './pages/wishlist';
 import ProfileOverview from './pages/ProfileOverview';
 import Settings from './pages/Settings';
 import { UserProfile } from './api/userApi';
+import AdminUser from './admin/pages/AdminUser';
+import AdminTour from './admin/pages/AdminTour';
+import AdminBooking from './admin/pages/AdminBooking';
 
 // Create a User Layout component with Header and Footer
 const UserLayout = ({ children }: { children: React.ReactNode }) => {
@@ -91,6 +94,9 @@ function App() {
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path='/admin/profile' element={<UpdateProfilePage />} />
             <Route path='/admin/hero' element={<AdminHero />} />
+            <Route path='/admin/users' element={<AdminUser />} />
+            <Route path='/admin/tours' element={<AdminTour />} />
+            <Route path='/admin/bookings' element={<AdminBooking />} />
 
             {/* User Routes - with header/footer */}
             <Route path='/' element={<UserLayout><Home /></UserLayout>} />
@@ -102,11 +108,11 @@ function App() {
             
          
             <Route path="/profile" element={<UserLayout><Profile /></UserLayout>}>
-  <Route index element={<ProfileContextWrapper />} />
-  <Route path="bookings" element={<Bookings />} />
-  <Route path="wishlist" element={<Wishlist />} />
-  <Route path="settings" element={<Settings />} />
-</Route>
+            <Route index element={<ProfileContextWrapper />} />
+            <Route path="bookings" element={<Bookings />} />
+            <Route path="wishlist" element={<Wishlist />} />
+            <Route path="settings" element={<Settings />} />
+            </Route>
 
 
 

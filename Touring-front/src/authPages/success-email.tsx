@@ -51,7 +51,7 @@ const EmailVerificationSuccess = () => {
       <div className="hidden lg:block flex-1 bg-cover bg-center" style={{
         backgroundImage: "url('https://images.unsplash.com/photo-1528127269322-539801943592?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80')"
       }}>
-        <div className="h-full w-full bg-black bg-opacity-40 flex items-center justify-center p-16">
+        <div className="h-full w-full bg-black bg-opacity-40 flex items-center justify-center p-16" style={{ opacity: 0.4}}>
           <div className="text-white">
             <h2 className="text-4xl font-bold mb-4">Welcome to Olosuashi Tours</h2>
             <p className="text-lg">Your journey begins here</p>

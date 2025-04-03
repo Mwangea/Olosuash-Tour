@@ -409,6 +409,7 @@ class BookingModel {
       throw error;
     }
   }
+
 }
 
 module.exports = BookingModel;

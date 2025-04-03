@@ -19,7 +19,13 @@
         "frame-title": "off"
       }
     ],
-    "axe/aria": "off"
+    "axe/aria": "off",
+    "axe/structure": [
+      "default",
+      {
+        "dlitem": "off"
+      }
+    ]
   },
   "browserslist": [
     "defaults",

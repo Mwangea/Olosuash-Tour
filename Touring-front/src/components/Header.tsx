@@ -445,40 +445,61 @@ const Header = () => {
                   onMouseLeave={() => setIsProfileDropdownOpen(false)}
                 >
                   <div className="py-1">
-                    <Link
-                      to="/profile"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#F5F0E6] hover:text-[#8B6B3D]"
-                      onClick={() => setIsProfileDropdownOpen(false)}
-                    >
-                      Profile
-                    </Link>
-                    <Link
-                      to="/profile/bookings"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#F5F0E6] hover:text-[#8B6B3D]"
-                      onClick={() => setIsProfileDropdownOpen(false)}
-                    >
-                      My Bookings
-                    </Link>
-                    <Link
-                      to="/wishlist"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#F5F0E6] hover:text-[#8B6B3D]"
-                      onClick={() => setIsProfileDropdownOpen(false)}
-                    >
-                      Wishlist
-                    </Link>
-                    <Link
-                      to="/settings"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#F5F0E6] hover:text-[#8B6B3D]"
-                      onClick={() => setIsProfileDropdownOpen(false)}
-                    >
-                      Settings
-                    </Link>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-[#F5F0E6] hover:text-[#8B6B3D]"
-                    >
-                      Logout
-                    </button>
+                    {/* Show only Dashboard for admin */}
+                    {user.role === "admin" ? (
+                      <>
+                        <Link
+                          to="/admin/dashboard"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#F5F0E6] hover:text-[#8B6B3D]"
+                          onClick={() => setIsProfileDropdownOpen(false)}
+                        >
+                          Dashboard
+                        </Link>
+                        <button
+                          onClick={handleLogout}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-[#F5F0E6] hover:text-[#8B6B3D]"
+                        >
+                          Logout
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <Link
+                          to="/profile"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#F5F0E6] hover:text-[#8B6B3D]"
+                          onClick={() => setIsProfileDropdownOpen(false)}
+                        >
+                          Profile
+                        </Link>
+                        <Link
+                          to="/profile/bookings"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#F5F0E6] hover:text-[#8B6B3D]"
+                          onClick={() => setIsProfileDropdownOpen(false)}
+                        >
+                          My Bookings
+                        </Link>
+                        <Link
+                          to="/wishlist"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#F5F0E6] hover:text-[#8B6B3D]"
+                          onClick={() => setIsProfileDropdownOpen(false)}
+                        >
+                          Wishlist
+                        </Link>
+                        <Link
+                          to="/settings"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#F5F0E6] hover:text-[#8B6B3D]"
+                          onClick={() => setIsProfileDropdownOpen(false)}
+                        >
+                          Settings
+                        </Link>
+                        <button
+                          onClick={handleLogout}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-[#F5F0E6] hover:text-[#8B6B3D]"
+                        >
+                          Logout
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -719,40 +740,61 @@ const Header = () => {
                       <p className="text-xs text-gray-500">{user.email}</p>
                     </div>
                   </div>
-                  <Link
-                    to="/profile"
-                    className="block py-2 text-base font-medium text-gray-700 hover:text-[#8B6B3D]"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    Profile
-                  </Link>
-                  <Link
-                    to="/my-bookings"
-                    className="block py-2 text-base font-medium text-gray-700 hover:text-[#8B6B3D]"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    My Bookings
-                  </Link>
-                  <Link
-                    to="/wishlist"
-                    className="block py-2 text-base font-medium text-gray-700 hover:text-[#8B6B3D]"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    Wishlist
-                  </Link>
-                  <Link
-                    to="/settings"
-                    className="block py-2 text-base font-medium text-gray-700 hover:text-[#8B6B3D]"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    Settings
-                  </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full text-left py-2 text-base font-medium text-gray-700 hover:text-[#8B6B3D]"
-                  >
-                    Logout
-                  </button>
+                  {/* Show only Dashboard for admin in mobile view */}
+                  {user.role === "admin" ? (
+                    <>
+                      <Link
+                        to="/admin/dashboard"
+                        className="block py-2 text-base font-medium text-gray-700 hover:text-[#8B6B3D]"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        Dashboard
+                      </Link>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full text-left py-2 text-base font-medium text-gray-700 hover:text-[#8B6B3D]"
+                      >
+                        Logout
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        to="/profile"
+                        className="block py-2 text-base font-medium text-gray-700 hover:text-[#8B6B3D]"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        Profile
+                      </Link>
+                      <Link
+                        to="/my-bookings"
+                        className="block py-2 text-base font-medium text-gray-700 hover:text-[#8B6B3D]"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        My Bookings
+                      </Link>
+                      <Link
+                        to="/wishlist"
+                        className="block py-2 text-base font-medium text-gray-700 hover:text-[#8B6B3D]"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        Wishlist
+                      </Link>
+                      <Link
+                        to="/settings"
+                        className="block py-2 text-base font-medium text-gray-700 hover:text-[#8B6B3D]"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        Settings
+                      </Link>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full text-left py-2 text-base font-medium text-gray-700 hover:text-[#8B6B3D]"
+                      >
+                        Logout
+                      </button>
+                    </>
+                  )}
                 </div>
               ) : (
                 <Link
