@@ -1,22 +1,31 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import AdminLayout from "../Adminlayout";
-import { FiEdit2, FiTrash2, FiSearch, FiUser, FiMail, FiPhone, FiCalendar, FiFilter } from 'react-icons/fi';
-import { formatDate } from '../../utils/format';
-import LoadingSpinner from '../../components/LoadingSpinner';
-import api from '../../api/axios';
-import { UserProfile } from '../../api/userApi';
-import UserEditModal from '../components/UserEditModal';
-import Pagination from '../../components/Pagination';
-import UserDeleteModal from '../components/UserDeleteModal';
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import {
+  FiEdit2,
+  FiTrash2,
+  FiSearch,
+  FiUser,
+  FiMail,
+  FiPhone,
+  FiCalendar,
+  FiFilter,
+} from "react-icons/fi";
+import { formatDate } from "../../utils/format";
+import LoadingSpinner from "../../components/LoadingSpinner";
+import api from "../../api/axios";
+import { UserProfile } from "../../api/userApi";
+import UserEditModal from "../components/UserEditModal";
+import Pagination from "../../components/Pagination";
+import UserDeleteModal from "../components/UserDeleteModal";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const AdminUser = () => {
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [displayUsers, setDisplayUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -24,7 +33,9 @@ const AdminUser = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
-  const [verificationFilter, setVerificationFilter] = useState<'all' | 'verified' | 'unverified'>('all');
+  const [verificationFilter, setVerificationFilter] = useState<
+    "all" | "verified" | "unverified"
+  >("all");
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -36,8 +47,8 @@ const AdminUser = () => {
         setAllUsers(response.data.data.users);
         setTotalUsers(response.data.results);
       } catch (err) {
-        setError('Failed to fetch users. Please try again later.');
-        console.error('Error fetching users:', err);
+        setError("Failed to fetch users. Please try again later.");
+        console.error("Error fetching users:", err);
       } finally {
         setLoading(false);
       }
@@ -49,33 +60,34 @@ const AdminUser = () => {
   // Apply filters and search whenever the underlying data changes
   useEffect(() => {
     let filtered = [...allUsers];
-    
+
     // Apply search filter
     if (searchTerm) {
-      filtered = filtered.filter(user => 
-        user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (user) =>
+          user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.email.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-    
+
     // Apply verification status filter
     // Apply verification status filter
-if (verificationFilter !== 'all') {
-    filtered = filtered.filter(user => 
-      (verificationFilter === 'verified' && user.is_verified === 1) ||
-      (verificationFilter === 'unverified' && user.is_verified === 0)
-    );
-  }
-    
+    if (verificationFilter !== "all") {
+      filtered = filtered.filter(
+        (user) =>
+          (verificationFilter === "verified" && user.is_verified === 1) ||
+          (verificationFilter === "unverified" && user.is_verified === 0)
+      );
+    }
+
     // Calculate total pages
     setTotalUsers(filtered.length);
     setTotalPages(Math.ceil(filtered.length / itemsPerPage));
-    
+
     // Apply pagination
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     setDisplayUsers(filtered.slice(startIndex, endIndex));
-    
   }, [allUsers, searchTerm, verificationFilter, currentPage]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,7 +95,9 @@ if (verificationFilter !== 'all') {
     setCurrentPage(1); // Reset to first page when searching
   };
 
-  const handleVerificationFilterChange = (status: 'all' | 'verified' | 'unverified') => {
+  const handleVerificationFilterChange = (
+    status: "all" | "verified" | "unverified"
+  ) => {
     setVerificationFilter(status);
     setCurrentPage(1); // Reset to first page when filtering
   };
@@ -104,35 +118,37 @@ if (verificationFilter !== 'all') {
     try {
       setIsProcessing(true);
       await api.delete(`/admin/users/${selectedUser.id}`);
-      
+
       // Update the users list
-      const updatedUsers = allUsers.filter(user => user.id !== selectedUser.id);
+      const updatedUsers = allUsers.filter(
+        (user) => user.id !== selectedUser.id
+      );
       setAllUsers(updatedUsers);
-      
+
       setShowDeleteModal(false);
     } catch (err) {
-      setError('Failed to delete user. Please try again.');
-      console.error('Error deleting user:', err);
+      setError("Failed to delete user. Please try again.");
+      console.error("Error deleting user:", err);
     } finally {
       setIsProcessing(false);
     }
   };
 
   const updateUserInList = (updatedUser: UserProfile) => {
-    setAllUsers(allUsers.map(user => 
-      user.id === updatedUser.id ? updatedUser : user
-    ));
+    setAllUsers(
+      allUsers.map((user) => (user.id === updatedUser.id ? updatedUser : user))
+    );
   };
 
   const getRoleBadge = (role: string) => {
     switch (role) {
-      case 'admin':
+      case "admin":
         return (
           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
             Admin
           </span>
         );
-      case 'user':
+      case "user":
         return (
           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
             User
@@ -171,10 +187,16 @@ if (verificationFilter !== 'all') {
 
   return (
     <AdminLayout>
-      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+      />
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-          <h1 className="text-2xl font-bold text-[#8B4513]">Users Management</h1>
+          <h1 className="text-2xl font-bold text-[#8B4513]">
+            Users Management
+          </h1>
           <div className="mt-4 md:mt-0">
             <p className="text-sm text-gray-600">
               Total Users: <span className="font-medium">{totalUsers}</span>
@@ -186,8 +208,17 @@ if (verificationFilter !== 'all') {
           <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
             <div className="flex">
               <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                <svg
+                  className="h-5 w-5 text-red-400"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                    clipRule="evenodd"
+                  />
                 </svg>
               </div>
               <div className="ml-3">
@@ -212,7 +243,7 @@ if (verificationFilter !== 'all') {
                   onChange={handleSearch}
                 />
               </div>
-              
+
               <div className="flex items-center">
                 <div className="relative inline-block text-left">
                   <div className="flex items-center">
@@ -220,7 +251,12 @@ if (verificationFilter !== 'all') {
                     <select
                       className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-[#8B4513] focus:border-[#8B4513] sm:text-sm rounded-md"
                       value={verificationFilter}
-                      onChange={(e) => handleVerificationFilterChange(e.target.value as any)}
+                      onChange={(e) =>
+                        handleVerificationFilterChange(
+                          e.target.value as "all" | "verified" | "unverified"
+                        )
+                      }
+                      aria-label="Filter users by verification status"
                     >
                       <option value="all">All Users</option>
                       <option value="verified">Verified</option>
@@ -236,19 +272,34 @@ if (verificationFilter !== 'all') {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-[#F5F0E6]">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[#8B4513] uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-[#8B4513] uppercase tracking-wider"
+                  >
                     User
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[#8B4513] uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-[#8B4513] uppercase tracking-wider"
+                  >
                     Contact
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[#8B4513] uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-[#8B4513] uppercase tracking-wider"
+                  >
                     Status
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[#8B4513] uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-[#8B4513] uppercase tracking-wider"
+                  >
                     Joined
                   </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-[#8B4513] uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-right text-xs font-medium text-[#8B4513] uppercase tracking-wider"
+                  >
                     Actions
                   </th>
                 </tr>
@@ -256,7 +307,10 @@ if (verificationFilter !== 'all') {
               <tbody className="bg-white divide-y divide-gray-200">
                 {displayUsers.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
+                    <td
+                      colSpan={5}
+                      className="px-6 py-4 text-center text-sm text-gray-500"
+                    >
                       No users found
                     </td>
                   </tr>
@@ -267,7 +321,11 @@ if (verificationFilter !== 'all') {
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10">
                             {user.profile_picture ? (
-                              <img className="h-10 w-10 rounded-full" src={user.profile_picture} alt="" />
+                              <img
+                                className="h-10 w-10 rounded-full"
+                                src={user.profile_picture}
+                                alt=""
+                              />
                             ) : (
                               <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
                                 <FiUser className="text-gray-500" />
@@ -275,8 +333,12 @@ if (verificationFilter !== 'all') {
                             )}
                           </div>
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{user.username}</div>
-                            <div className="text-sm text-gray-500">{getRoleBadge(user.role)}</div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {user.username}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {getRoleBadge(user.role)}
+                            </div>
                           </div>
                         </div>
                       </td>

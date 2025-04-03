@@ -8,7 +8,7 @@ interface UserEditModalProps {
   user: UserProfile;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (updatedUser: any) => void;
+  onSave: (updatedUser: UserProfile) => void;
 }
 
 const UserEditModal = ({ user, isOpen, onClose, onSave }: UserEditModalProps) => {
@@ -55,8 +55,14 @@ const UserEditModal = ({ user, isOpen, onClose, onSave }: UserEditModalProps) =>
       onSave(response.data.data.user);
       toast.success('User updated successfully!');
       onClose();
-    } catch (err) {
-      const errorMsg = err.response?.data?.message || 'Failed to update user';
+    } catch (err: unknown) {
+      // Properly type the error
+      let errorMsg: string;
+      if (err instanceof Error) {
+        errorMsg = (err as { response?: { data?: { message?: string } } }).response?.data?.message || 'Failed to update user';
+      } else {
+        errorMsg = 'Failed to update user';
+      }
       setError(errorMsg);
       toast.error(errorMsg);
     } finally {
