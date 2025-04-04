@@ -53,11 +53,13 @@ router.get('/stats', tourController.getTourStats);
 router.get('/', tourController.getAllTours);
 router.get('/featured', tourController.getFeaturedTours);
 router.get('/top-rated', tourController.getTopRatedTours);
-router.get('/:id', tourController.getTourById);
-router.get('/slug/:slug', tourController.getTourBySlug);
 router.get('/regions', tourController.getRegions);
 router.get('/vehicle-types', tourController.getVehicleTypes);
 router.get('/service-categories', tourController.getServiceCategories);
+router.get('/slug/:slug', tourController.getTourBySlug);
+router.get('/:id', tourController.getTourById);
+
+
 
 // Protected routes (authentication required)
 router.use(isAuthenticated);

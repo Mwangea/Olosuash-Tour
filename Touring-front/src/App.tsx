@@ -31,6 +31,7 @@ import AdminTour from './admin/pages/AdminTour';
 import AdminBooking from './admin/pages/AdminBooking';
 import UnauthorizedPage from './pages/UnauthorizedPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import TourForm from './admin/pages/TourForm';
 
 // Create a User Layout component with Header and Footer
 const UserLayout = ({ children }: { children: React.ReactNode }) => {
@@ -101,6 +102,8 @@ function App() {
             <Route path='/admin/users' element={<AdminUser />} />
             <Route path='/admin/tours' element={<AdminTour />} />
             <Route path='/admin/bookings' element={<AdminBooking />} />
+            <Route path="/admin/tours/new" element={<TourForm />} />
+            <Route path="/admin/tours/edit/:id" element={<TourForm />} />
             </Route>
 
             {/* User Routes - with header/footer */}
