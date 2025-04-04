@@ -29,6 +29,8 @@ import { UserProfile } from './api/userApi';
 import AdminUser from './admin/pages/AdminUser';
 import AdminTour from './admin/pages/AdminTour';
 import AdminBooking from './admin/pages/AdminBooking';
+import UnauthorizedPage from './pages/UnauthorizedPage';
+import ProtectedRoute from './components/ProtectedRoute';
 
 // Create a User Layout component with Header and Footer
 const UserLayout = ({ children }: { children: React.ReactNode }) => {
@@ -87,16 +89,19 @@ function App() {
             <Route path='/verify-email/success' element={<EmailVerificationSuccess />} />
             <Route path="/verify-email/:token" element={<EmailVerification />} />
             <Route path="/verify-email/failed" element={<EmailVerificationFailed />} />
+            <Route path="/unauthorized" element={<UnauthorizedPage />} />
             
             {/* Admin Routes - no header/footer */}
             {/* Redirect /admin to /admin/dashboard */}
-            <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+            <Route path="/admin" element={<ProtectedRoute adminOnly={true}><Navigate to="/admin/dashboard" replace /></ProtectedRoute>} />
+            <Route element={<ProtectedRoute adminOnly={true} />}>
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path='/admin/profile' element={<UpdateProfilePage />} />
             <Route path='/admin/hero' element={<AdminHero />} />
             <Route path='/admin/users' element={<AdminUser />} />
             <Route path='/admin/tours' element={<AdminTour />} />
             <Route path='/admin/bookings' element={<AdminBooking />} />
+            </Route>
 
             {/* User Routes - with header/footer */}
             <Route path='/' element={<UserLayout><Home /></UserLayout>} />
@@ -107,7 +112,7 @@ function App() {
             <Route path='/faq' element={<UserLayout><FAQPage /></UserLayout>} />
             
          
-            <Route path="/profile" element={<UserLayout><Profile /></UserLayout>}>
+            <Route path="/profile" element={<ProtectedRoute><UserLayout><Profile /></UserLayout></ProtectedRoute>}>
             <Route index element={<ProfileContextWrapper />} />
             <Route path="bookings" element={<Bookings />} />
             <Route path="wishlist" element={<Wishlist />} />
