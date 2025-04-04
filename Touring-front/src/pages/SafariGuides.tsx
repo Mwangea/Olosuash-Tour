@@ -73,7 +73,7 @@ const SafariGuides = () => {
       location: "USA",
       date: "July 2023",
       rating: 5,
-      photo: "/images/testimonials/sarah-johnson.jpg",
+      photo: "/sara-johnson.png",
       guide: "Cephas Sadala"
     },
     {
@@ -101,13 +101,13 @@ const SafariGuides = () => {
       <div 
         className="bg-[#8B6B3D] py-32 text-white relative overflow-hidden"
         style={{
-          backgroundImage: 'url("/safari-slide.avif")',
+          backgroundImage: 'url("/safari-vans.jpg")',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundAttachment: 'fixed'
         }}
       >
-        <div className="absolute inset-0 bg-[#8B6B3D] opacity-90"></div>
+        <div className="absolute inset-0 bg-[#8B6B3D] opacity-80"></div>
         <div className="container mx-auto px-4 text-center relative z-10">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">Our Safari Guides</h1>
           <p className="text-xl max-w-2xl mx-auto">Meet the experts who will make your African adventure unforgettable</p>

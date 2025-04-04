@@ -9,6 +9,7 @@ import {
   FiPhone,
   FiCalendar,
   FiFilter,
+  FiRefreshCw,
 } from "react-icons/fi";
 import { formatDate } from "../../utils/format";
 import LoadingSpinner from "../../components/LoadingSpinner";
@@ -24,6 +25,7 @@ const AdminUser = () => {
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [displayUsers, setDisplayUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
@@ -41,7 +43,7 @@ const AdminUser = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        setLoading(true);
+        setError("");
         // Changed API call to fetch all users instead of paginated data
         const response = await api.get(`/admin/users?limit=1000`);
         setAllUsers(response.data.data.users);
@@ -51,6 +53,7 @@ const AdminUser = () => {
         console.error("Error fetching users:", err);
       } finally {
         setLoading(false);
+        setIsRefreshing(false);
       }
     };
 
@@ -70,7 +73,6 @@ const AdminUser = () => {
       );
     }
 
-    // Apply verification status filter
     // Apply verification status filter
     if (verificationFilter !== "all") {
       filtered = filtered.filter(
@@ -110,6 +112,20 @@ const AdminUser = () => {
   const handleDeleteUser = (user: UserProfile) => {
     setSelectedUser(user);
     setShowDeleteModal(true);
+  };
+
+  const refreshUsersList = async () => {
+    setIsRefreshing(true);
+    try {
+      const response = await api.get(`/admin/users?limit=1000`);
+      setAllUsers(response.data.data.users);
+      setTotalUsers(response.data.results);
+    } catch (err) {
+      setError("Failed to refresh users. Please try again later.");
+      console.error("Error refreshing users:", err);
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   const confirmDeleteUser = async () => {
@@ -175,11 +191,129 @@ const AdminUser = () => {
     );
   };
 
+  // Skeleton row for loading state
+  const SkeletonRow = () => (
+    <tr className="animate-pulse">
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="flex items-center">
+          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-300"></div>
+          <div className="ml-4">
+            <div className="h-4 bg-gray-300 rounded w-24"></div>
+            <div className="h-3 bg-gray-300 rounded w-16 mt-2"></div>
+          </div>
+        </div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="h-4 bg-gray-300 rounded w-32"></div>
+        <div className="h-3 bg-gray-300 rounded w-24 mt-2"></div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="h-6 bg-gray-300 rounded w-20"></div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="h-4 bg-gray-300 rounded w-24"></div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-right">
+        <div className="flex justify-end space-x-2">
+          <div className="h-6 bg-gray-300 rounded w-16"></div>
+          <div className="h-6 bg-gray-300 rounded w-16"></div>
+        </div>
+      </td>
+    </tr>
+  );
+
+  // Render loading skeleton
+  const renderSkeletonLoader = () => {
+    return Array(5)
+      .fill(0)
+      .map((_, index) => <SkeletonRow key={`skeleton-${index}`} />);
+  };
+
+  // Loading state indicator above the table
+  const LoadingIndicator = () => (
+    <div className="flex items-center justify-center py-2 px-4 bg-blue-50 rounded-md mb-4">
+      <div className="mr-2">
+        <LoadingSpinner />
+      </div>
+      <span className="ml-2 text-blue-700 font-medium text-sm">
+        Refreshing users data...
+      </span>
+    </div>
+  );
+
+  // Mini spinner component for inline usage
+  const MiniSpinner = () => (
+    <div className="mr-2 h-4 w-4 border-2 border-t-2 border-[#8B4513] border-t-transparent rounded-full animate-spin"></div>
+  );
+
+  // Full page loading
   if (loading) {
     return (
       <AdminLayout>
-        <div className="flex justify-center items-center h-64">
-          <LoadingSpinner />
+        <div className="space-y-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+            <h1 className="text-2xl font-bold text-[#8B4513]">
+              Users Management
+            </h1>
+            <div className="mt-4 md:mt-0">
+              <div className="h-6 bg-gray-300 rounded w-32 animate-pulse"></div>
+            </div>
+          </div>
+
+          <div className="bg-white shadow rounded-lg overflow-hidden">
+            <div className="p-4 border-b border-gray-200">
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="relative flex-grow">
+                  <div className="h-10 bg-gray-300 rounded w-full animate-pulse"></div>
+                </div>
+                <div className="flex items-center">
+                  <div className="h-10 bg-gray-300 rounded w-40 animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-[#F5F0E6]">
+                  <tr>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-[#8B4513] uppercase tracking-wider"
+                    >
+                      User
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-[#8B4513] uppercase tracking-wider"
+                    >
+                      Contact
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-[#8B4513] uppercase tracking-wider"
+                    >
+                      Status
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-[#8B4513] uppercase tracking-wider"
+                    >
+                      Joined
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-right text-xs font-medium text-[#8B4513] uppercase tracking-wider"
+                    >
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {renderSkeletonLoader()}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </AdminLayout>
     );
@@ -197,10 +331,25 @@ const AdminUser = () => {
           <h1 className="text-2xl font-bold text-[#8B4513]">
             Users Management
           </h1>
-          <div className="mt-4 md:mt-0">
-            <p className="text-sm text-gray-600">
+          <div className="mt-4 md:mt-0 flex items-center">
+            <p className="text-sm text-gray-600 mr-4">
               Total Users: <span className="font-medium">{totalUsers}</span>
             </p>
+            <button
+              onClick={refreshUsersList}
+              disabled={isRefreshing}
+              className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-[#8B4513] hover:bg-[#A0522D] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#8B4513] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isRefreshing ? (
+                <>
+                  <MiniSpinner /> Refreshing...
+                </>
+              ) : (
+                <>
+                  <FiRefreshCw className="mr-1" /> Refresh
+                </>
+              )}
+            </button>
           </div>
         </div>
 
@@ -221,12 +370,33 @@ const AdminUser = () => {
                   />
                 </svg>
               </div>
-              <div className="ml-3">
+              <div className="ml-3 flex justify-between items-center w-full">
                 <p className="text-sm text-red-700">{error}</p>
+                <button
+                  onClick={() => setError("")}
+                  className="text-red-700 hover:text-red-900"
+                >
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M6 18L18 6M6 6l12 12"
+                    ></path>
+                  </svg>
+                </button>
               </div>
             </div>
           </div>
         )}
+
+        {isRefreshing && <LoadingIndicator />}
 
         <div className="bg-white shadow rounded-lg overflow-hidden">
           <div className="p-4 border-b border-gray-200">

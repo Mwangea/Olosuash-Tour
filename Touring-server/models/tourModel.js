@@ -892,25 +892,66 @@ const tourModel = {
     return rows.length > 0;
   },
   
-  /**
-   * Get tour statistics
-   * @returns {Promise<Object>} Statistics object
-   */
-  async getStats() {
-    const [rows] = await pool.query(
-      `SELECT 
-        COUNT(*) as total_tours, 
-        AVG(price) as average_price, 
-        MIN(price) as min_price, 
-        MAX(price) as max_price, 
-        SUM(rating_quantity) as total_reviews, 
-        AVG(rating) as average_rating, 
-        (SELECT COUNT(*) FROM tours WHERE featured = 1) as featured_tours, 
-        (SELECT COUNT(*) FROM tour_reviews) as total_reviews_all 
-       FROM tours`
-    );
-    return rows[0];
-  },
+ /**
+ * Get comprehensive tour statistics
+ * @returns {Promise<Object>} Statistics object
+ */
+ async getStats() {
+  try {
+    const [statsRows] = await pool.query(`
+      SELECT 
+        COUNT(*) as total_tours,
+        CAST(COALESCE(AVG(price), 0) AS DECIMAL(10,2)) as average_price,
+        CAST(COALESCE(MIN(price), 0) AS DECIMAL(10,2)) as min_price,
+        CAST(COALESCE(MAX(price), 0) AS DECIMAL(10,2)) as max_price,
+        COALESCE(SUM(rating_quantity), 0) as total_reviews,
+        CAST(COALESCE(AVG(rating), 0) AS DECIMAL(10,2)) as average_rating,
+        COALESCE(SUM(CASE WHEN featured = 1 THEN 1 ELSE 0 END), 0) as featured_tours,
+        COALESCE((SELECT COUNT(*) FROM tour_reviews), 0) as total_reviews_all
+      FROM tours
+    `);
+    
+    return {
+      total_tours: Number(statsRows[0].total_tours),
+      average_price: Number(statsRows[0].average_price),
+      min_price: Number(statsRows[0].min_price),
+      max_price: Number(statsRows[0].max_price),
+      total_reviews: Number(statsRows[0].total_reviews),
+      average_rating: Number(statsRows[0].average_rating),
+      featured_tours: Number(statsRows[0].featured_tours),
+      total_reviews_all: Number(statsRows[0].total_reviews_all)
+    };
+  } catch (error) {
+    console.error('Error getting tour stats:', error);
+    return this.getDefaultStats();
+  }
+},
+
+/**
+ * Default statistics when no data exists
+ */
+getDefaultStats() {
+  return {
+    total_tours: 0,
+    average_price: 0,
+    min_price: 0,
+    max_price: 0,
+    total_reviews: 0,
+    average_rating: 0,
+    featured_tours: 0,
+    total_reviews_all: 0,
+    easy_tours: 0,
+    medium_tours: 0,
+    difficult_tours: 0,
+    average_duration: 0,
+    price_distribution: {
+      under_500: 0,
+      price_500_to_1000: 0,
+      price_1000_to_2000: 0,
+      over_2000: 0
+    }
+  };
+},
   
   /**
    * Get top rated tours

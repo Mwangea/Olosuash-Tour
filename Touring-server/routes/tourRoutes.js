@@ -47,6 +47,8 @@ const upload = multer({
   fileFilter: fileFilter
 });
 
+// Stats route
+router.get('/stats', tourController.getTourStats);
 // Public routes (no authentication required)
 router.get('/', tourController.getAllTours);
 router.get('/featured', tourController.getFeaturedTours);
@@ -82,7 +84,6 @@ router.post('/:id/images', upload.array('images', 10), tourController.addTourIma
 router.delete('/images/:id', tourController.removeTourImage);
 router.patch('/:tourId/images/:imageId/cover', tourController.setImageAsCover);
 
-// Stats route
-router.get('/stats', tourController.getTourStats);
+
 
 module.exports = router;

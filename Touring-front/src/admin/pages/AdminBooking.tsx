@@ -19,17 +19,26 @@ interface Booking {
 }
 
 interface ApiResponse {
-    status: string;
-    pagination: {
-      total: number;
-      totalPages: number;
-      currentPage: number;
-      limit: number;
+  status: string;
+  pagination: {
+    total: number;
+    totalPages: number;
+    currentPage: number;
+    limit: number;
+  };
+  data: {
+    bookings: Booking[];
+  };
+}
+
+interface ApiError {
+  response?: {
+    data?: {
+      message?: string;
     };
-    data: {
-      bookings: Booking[];
-    };
-  }
+  };
+  message?: string;
+}
 
 const AdminBooking = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -60,15 +69,15 @@ const AdminBooking = () => {
       });
   
       setBookings(response.data.data.bookings || []);
-      setPagination({
-        ...pagination,
+      setPagination(prev => ({
+        ...prev,
         total: response.data.pagination.total,
         totalPages: response.data.pagination.totalPages,
-      });
+      }));
   
     } catch (err) {
       console.error('Fetch error:', err);
-      const error = err as any;
+      const error = err as ApiError;
       setError(error.response?.data?.message || 'Failed to fetch bookings');
       toast.error(error.response?.data?.message || 'Failed to fetch bookings');
     } finally {
@@ -88,8 +97,8 @@ const AdminBooking = () => {
       toast.success('Booking status updated successfully');
       await fetchBookings();
     } catch (err) {
-        const error = err as any;
-        toast.error(error.response?.data?.message || 'Failed to update status');
+      const error = err as ApiError;
+      toast.error(error.response?.data?.message || 'Failed to update status');
     } finally {
       setUpdatingId(null);
     }
@@ -104,7 +113,8 @@ const AdminBooking = () => {
       toast.success('Booking deleted successfully');
       await fetchBookings();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to delete booking');
+      const error = err as ApiError;
+      toast.error(error.response?.data?.message || 'Failed to delete booking');
     } finally {
       setDeletingId(null);
     }
@@ -361,7 +371,7 @@ const AdminBooking = () => {
                 <div>
                   <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
                     <button
-                      onClick={() => setPagination({ ...pagination, page: pagination.page - 1 })}
+                      onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
                       disabled={pagination.page === 1 || loading}
                       className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -383,7 +393,7 @@ const AdminBooking = () => {
                       return (
                         <button
                           key={pageNum}
-                          onClick={() => setPagination({ ...pagination, page: pageNum })}
+                          onClick={() => setPagination(prev => ({ ...prev, page: pageNum }))}
                           disabled={loading}
                           className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
                             pagination.page === pageNum
@@ -396,7 +406,7 @@ const AdminBooking = () => {
                       );
                     })}
                     <button
-                      onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
+                      onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
                       disabled={pagination.page === pagination.totalPages || loading}
                       className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >

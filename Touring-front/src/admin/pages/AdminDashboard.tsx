@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { 
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import {
   Users,
   BookOpen,
   Calendar,
@@ -10,11 +10,11 @@ import {
   Activity,
   DollarSign,
   TrendingUp,
-  UserCheck
-} from 'lucide-react';
-import AdminLayout from '../Adminlayout';
-import api from '../../api/axios';
-
+  UserCheck,
+  Star,
+} from "lucide-react";
+import AdminLayout from "../Adminlayout";
+import api from "../../api/axios";
 
 interface User {
   id: number;
@@ -38,6 +38,16 @@ interface Stats {
   total_bookings: number;
   recent_signups: number;
   revenue: number;
+  tour_stats?: {
+    total_tours: number;
+    average_price: number;
+    min_price: number;
+    max_price: number;
+    total_reviews: number;
+    average_rating: number;
+    featured_tours: number;
+    total_reviews_all: number;
+  };
 }
 
 interface QuickStats {
@@ -57,7 +67,7 @@ const AdminDashboard = () => {
     stats: true,
     users: true,
     bookings: true,
-    quickStats: true
+    quickStats: true,
   });
 
   // Fetch dashboard data
@@ -65,45 +75,48 @@ const AdminDashboard = () => {
     const fetchData = async () => {
       try {
         // Use the API client with authentication interceptors instead of native fetch
-        const [usersRes, bookingsRes, quickStatsRes] = await Promise.all([
-          api.get('/admin/users/stats'),
-          api.get('/bookings/stats/overview'),
-          api.get('/bookings/stats/quick?days=30') // Get quick stats for last 30 days, you can adjust this
-        ]);
-        
+        const [usersRes, bookingsRes, quickStatsRes, toursRes] =
+          await Promise.all([
+            api.get("/admin/users/stats"),
+            api.get("/bookings/stats/overview"),
+            api.get("/bookings/stats/quick?days=30"),
+            api.get("/tours/stats"),
+          ]);
+
         const usersData = usersRes.data;
         const bookingsData = bookingsRes.data;
         const quickStatsData = quickStatsRes.data;
-        
+        const toursData = toursRes.data;
+
         setStats({
           total_users: usersData.data.stats.totalUsers,
           recent_signups: usersData.data.stats.usersByMonth?.[0]?.count || 0,
           total_bookings: bookingsData.data.stats.total_bookings,
-          revenue: bookingsData.data.stats.total_revenue || 0
+          revenue: bookingsData.data.stats.total_revenue || 0,
+          tour_stats: toursData.data.stats,
         });
-        
+
         setQuickStats(quickStatsData.data);
-        
-        setLoading(prev => ({ 
-          ...prev, 
+
+        setLoading((prev) => ({
+          ...prev,
           stats: false,
-          quickStats: false
+          quickStats: false,
         }));
 
         // Use API client for recent users
-        const usersListRes = await api.get('/admin/users?limit=5');
+        const usersListRes = await api.get("/admin/users?limit=5");
         const usersListData = usersListRes.data;
         setRecentUsers(usersListData.data.users);
-        setLoading(prev => ({ ...prev, users: false }));
+        setLoading((prev) => ({ ...prev, users: false }));
 
         // Use API client for recent bookings
-        const bookingsListRes = await api.get('/bookings?limit=5');
+        const bookingsListRes = await api.get("/bookings?limit=5");
         const bookingsListData = bookingsListRes.data;
         setRecentBookings(bookingsListData.data.bookings);
-        setLoading(prev => ({ ...prev, bookings: false }));
+        setLoading((prev) => ({ ...prev, bookings: false }));
       } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-        // Handle the error appropriately - the interceptor will handle 401 errors automatically
+        console.error("Error fetching dashboard data:", error);
       }
     };
 
@@ -113,18 +126,18 @@ const AdminDashboard = () => {
   // Format date
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
   // Format currency
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(amount);
   };
 
@@ -149,7 +162,9 @@ const AdminDashboard = () => {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Total Users</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">
+                    Total Users
+                  </dt>
                   <dd className="flex items-baseline">
                     <div className="text-2xl font-semibold text-gray-900">
                       {loading.stats ? (
@@ -165,7 +180,10 @@ const AdminDashboard = () => {
           </div>
           <div className="bg-gray-50 px-5 py-3">
             <div className="text-sm">
-              <Link to="/admin/users" className="font-medium text-[#8B6B3D] hover:text-[#6B4F2D]">
+              <Link
+                to="/admin/users"
+                className="font-medium text-[#8B6B3D] hover:text-[#6B4F2D]"
+              >
                 View all users <ArrowUpRight className="inline h-4 w-4" />
               </Link>
             </div>
@@ -181,7 +199,9 @@ const AdminDashboard = () => {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Total Bookings</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">
+                    Total Bookings
+                  </dt>
                   <dd className="flex items-baseline">
                     <div className="text-2xl font-semibold text-gray-900">
                       {loading.stats ? (
@@ -197,29 +217,34 @@ const AdminDashboard = () => {
           </div>
           <div className="bg-gray-50 px-5 py-3">
             <div className="text-sm">
-              <Link to="/admin/bookings" className="font-medium text-[#8B6B3D] hover:text-[#6B4F2D]">
+              <Link
+                to="/admin/bookings"
+                className="font-medium text-[#8B6B3D] hover:text-[#6B4F2D]"
+              >
                 View all bookings <ArrowUpRight className="inline h-4 w-4" />
               </Link>
             </div>
           </div>
         </div>
 
-        {/* Recent Signups */}
+        {/* Total Tours */}
         <div className="bg-white overflow-hidden rounded-lg shadow border border-gray-200">
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0 bg-[#F5F0E6] p-3 rounded-md">
-                <UserCheck className="h-6 w-6 text-[#8B6B3D]" />
+                <BookOpen className="h-6 w-6 text-[#8B6B3D]" />
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Recent Signups</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">
+                    Total Tours
+                  </dt>
                   <dd className="flex items-baseline">
                     <div className="text-2xl font-semibold text-gray-900">
                       {loading.stats ? (
                         <div className="h-8 w-12 bg-gray-200 rounded animate-pulse"></div>
                       ) : (
-                        stats?.recent_signups.toLocaleString()
+                        stats?.tour_stats?.total_tours.toLocaleString()
                       )}
                     </div>
                   </dd>
@@ -229,8 +254,11 @@ const AdminDashboard = () => {
           </div>
           <div className="bg-gray-50 px-5 py-3">
             <div className="text-sm">
-              <Link to="/admin/users" className="font-medium text-[#8B6B3D] hover:text-[#6B4F2D]">
-                View recent users <ArrowUpRight className="inline h-4 w-4" />
+              <Link
+                to="/admin/tours"
+                className="font-medium text-[#8B6B3D] hover:text-[#6B4F2D]"
+              >
+                View all tours <ArrowUpRight className="inline h-4 w-4" />
               </Link>
             </div>
           </div>
@@ -245,7 +273,9 @@ const AdminDashboard = () => {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Total Revenue</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">
+                    Total Revenue
+                  </dt>
                   <dd className="flex items-baseline">
                     <div className="text-2xl font-semibold text-gray-900">
                       {loading.stats ? (
@@ -261,7 +291,10 @@ const AdminDashboard = () => {
           </div>
           <div className="bg-gray-50 px-5 py-3">
             <div className="text-sm">
-              <Link to="/admin/bookings" className="font-medium text-[#8B6B3D] hover:text-[#6B4F2D]">
+              <Link
+                to="/admin/bookings"
+                className="font-medium text-[#8B6B3D] hover:text-[#6B4F2D]"
+              >
                 View revenue report <ArrowUpRight className="inline h-4 w-4" />
               </Link>
             </div>
@@ -326,7 +359,9 @@ const AdminDashboard = () => {
                             </div>
                           </div>
                           <div className="flex justify-between">
-                            <p className="text-sm text-gray-500 truncate">{user.email}</p>
+                            <p className="text-sm text-gray-500 truncate">
+                              {user.email}
+                            </p>
                             <p className="text-xs text-gray-400">
                               {formatDate(user.created_at)}
                             </p>
@@ -384,11 +419,11 @@ const AdminDashboard = () => {
                         <div className="ml-2 flex-shrink-0 flex">
                           <span
                             className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              booking.status === 'approved'
-                                ? 'bg-green-100 text-green-800'
-                                : booking.status === 'pending'
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : 'bg-red-100 text-red-800'
+                              booking.status === "approved"
+                                ? "bg-green-100 text-green-800"
+                                : booking.status === "pending"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : "bg-red-100 text-red-800"
                             }`}
                           >
                             {booking.status}
@@ -405,7 +440,7 @@ const AdminDashboard = () => {
                         <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
                           <Calendar className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
                           <p>
-                            {formatDate(booking.travel_date)} •{' '}
+                            {formatDate(booking.travel_date)} •{" "}
                             <span className="font-medium text-gray-900">
                               {formatCurrency(booking.total_price)}
                             </span>
@@ -453,20 +488,22 @@ const AdminDashboard = () => {
                   <TrendingUp className="h-6 w-6 text-white" />
                 </div>
                 <div className="ml-5 w-0 flex-1">
-                  <dt className="text-sm font-medium text-gray-500 truncate">Avg. Bookings/Day</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">
+                    Avg. Bookings/Day
+                  </dt>
                   <dd className="flex items-baseline">
                     {loading.quickStats ? (
                       <div className="h-6 w-16 bg-gray-300 rounded animate-pulse"></div>
                     ) : (
                       <div className="text-2xl font-semibold text-gray-900">
-                        {quickStats?.avgBookings || '0'}
+                        {quickStats?.avgBookings || "0"}
                       </div>
                     )}
                   </dd>
                 </div>
               </div>
             </div>
-            
+
             {/* Average Revenue Per Booking */}
             <div className="bg-[#F5F0E6] overflow-hidden rounded-lg px-4 py-5 sm:p-6">
               <div className="flex items-center">
@@ -474,7 +511,9 @@ const AdminDashboard = () => {
                   <DollarSign className="h-6 w-6 text-white" />
                 </div>
                 <div className="ml-5 w-0 flex-1">
-                  <dt className="text-sm font-medium text-gray-500 truncate">Avg. Revenue/Booking</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">
+                    Avg. Revenue/Booking
+                  </dt>
                   <dd className="flex items-baseline">
                     {loading.quickStats ? (
                       <div className="h-6 w-16 bg-gray-300 rounded animate-pulse"></div>
@@ -487,7 +526,7 @@ const AdminDashboard = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Conversion Rate */}
             <div className="bg-[#F5F0E6] overflow-hidden rounded-lg px-4 py-5 sm:p-6">
               <div className="flex items-center">
@@ -495,20 +534,22 @@ const AdminDashboard = () => {
                   <UserCheck className="h-6 w-6 text-white" />
                 </div>
                 <div className="ml-5 w-0 flex-1">
-                  <dt className="text-sm font-medium text-gray-500 truncate">Conversion Rate</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">
+                    Conversion Rate
+                  </dt>
                   <dd className="flex items-baseline">
                     {loading.quickStats ? (
                       <div className="h-6 w-16 bg-gray-300 rounded animate-pulse"></div>
                     ) : (
                       <div className="text-2xl font-semibold text-gray-900">
-                        {quickStats?.conversionRate || '0'}%
+                        {quickStats?.conversionRate || "0"}%
                       </div>
                     )}
                   </dd>
                 </div>
               </div>
             </div>
-            
+
             {/* Average Response Time */}
             <div className="bg-[#F5F0E6] overflow-hidden rounded-lg px-4 py-5 sm:p-6">
               <div className="flex items-center">
@@ -516,13 +557,126 @@ const AdminDashboard = () => {
                   <Clock className="h-6 w-6 text-white" />
                 </div>
                 <div className="ml-5 w-0 flex-1">
-                  <dt className="text-sm font-medium text-gray-500 truncate">Avg. Response Time</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">
+                    Avg. Response Time
+                  </dt>
                   <dd className="flex items-baseline">
                     {loading.quickStats ? (
                       <div className="h-6 w-16 bg-gray-300 rounded animate-pulse"></div>
                     ) : (
                       <div className="text-2xl font-semibold text-gray-900">
-                        {quickStats?.avgResponseTime || '0'}h
+                        {quickStats?.avgResponseTime || "0"}h
+                      </div>
+                    )}
+                  </dd>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tour Statistics */}
+      <div className="bg-white rounded-lg shadow border border-gray-200 mb-8">
+        <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
+          <h3 className="text-lg font-medium leading-6 text-gray-900 flex items-center">
+            <Activity className="h-5 w-5 text-[#8B6B3D] mr-2" />
+            Tour Statistics
+          </h3>
+        </div>
+        <div className="px-4 py-5 sm:p-6">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {/* Average Price */}
+            <div className="bg-[#F5F0E6] overflow-hidden rounded-lg px-4 py-5 sm:p-6">
+              <div className="flex items-center">
+                <div className="flex-shrink-0 bg-[#8B6B3D] rounded-md p-3">
+                  <DollarSign className="h-6 w-6 text-white" />
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dt className="text-sm font-medium text-gray-500 truncate">
+                    Avg. Price
+                  </dt>
+                  <dd className="flex items-baseline">
+                    {loading.stats ? (
+                      <div className="h-6 w-16 bg-gray-300 rounded animate-pulse"></div>
+                    ) : (
+                      <div className="text-2xl font-semibold text-gray-900">
+                        {formatCurrency(stats?.tour_stats?.average_price || 0)}
+                      </div>
+                    )}
+                  </dd>
+                </div>
+              </div>
+            </div>
+
+            {/* Price Range */}
+            <div className="bg-[#F5F0E6] overflow-hidden rounded-lg px-4 py-5 sm:p-6">
+              <div className="flex items-center">
+                <div className="flex-shrink-0 bg-[#8B6B3D] rounded-md p-3">
+                  <TrendingUp className="h-6 w-6 text-white" />
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dt className="text-sm font-medium text-gray-500 truncate">
+                    Price Range
+                  </dt>
+                  <dd className="flex items-baseline">
+                    {loading.stats ? (
+                      <div className="h-6 w-16 bg-gray-300 rounded animate-pulse"></div>
+                    ) : (
+                      <div className="text-2xl font-semibold text-gray-900">
+                        {formatCurrency(stats?.tour_stats?.min_price || 0)} -{" "}
+                        {formatCurrency(stats?.tour_stats?.max_price || 0)}
+                      </div>
+                    )}
+                  </dd>
+                </div>
+              </div>
+            </div>
+
+            {/* Average Rating */}
+            <div className="bg-[#F5F0E6] overflow-hidden rounded-lg px-4 py-5 sm:p-6">
+              <div className="flex items-center">
+                <div className="flex-shrink-0 bg-[#8B6B3D] rounded-md p-3">
+                  <Star className="h-6 w-6 text-white" />
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dt className="text-sm font-medium text-gray-500 truncate">
+                    Avg. Rating
+                  </dt>
+                  <dd className="flex items-baseline">
+                    {loading.stats ? (
+                      <div className="h-6 w-16 bg-gray-300 rounded animate-pulse"></div>
+                    ) : (
+                      <div className="text-2xl font-semibold text-gray-900">
+                        {typeof stats?.tour_stats?.average_rating === "number"
+                          ? stats.tour_stats.average_rating.toFixed(1)
+                          : parseFloat(
+                              stats?.tour_stats?.average_rating || "0"
+                            ).toFixed(1)}
+                        /5
+                      </div>
+                    )}
+                  </dd>
+                </div>
+              </div>
+            </div>
+
+            {/* Featured Tours */}
+            <div className="bg-[#F5F0E6] overflow-hidden rounded-lg px-4 py-5 sm:p-6">
+              <div className="flex items-center">
+                <div className="flex-shrink-0 bg-[#8B6B3D] rounded-md p-3">
+                  <UserCheck className="h-6 w-6 text-white" />
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dt className="text-sm font-medium text-gray-500 truncate">
+                    Featured Tours
+                  </dt>
+                  <dd className="flex items-baseline">
+                    {loading.stats ? (
+                      <div className="h-6 w-16 bg-gray-300 rounded animate-pulse"></div>
+                    ) : (
+                      <div className="text-2xl font-semibold text-gray-900">
+                        {stats?.tour_stats?.featured_tours || "0"}
                       </div>
                     )}
                   </dd>

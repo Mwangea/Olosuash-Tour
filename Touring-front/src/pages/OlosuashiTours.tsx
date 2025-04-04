@@ -57,13 +57,14 @@ const AboutPage = () => {
       <div 
         className="bg-[#8B6B3D] py-32 text-white relative overflow-hidden"
         style={{
-          backgroundImage: 'url("https://images.unsplash.com/photo-1464037866556-6812c9d1c72e?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80")',
+          backgroundImage: 'url("/mawimbi.jpg")',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          backgroundAttachment: 'fixed'
+          backgroundAttachment: 'fixed',
+          
         }}
       >
-        <div className="absolute inset-0 bg-[#8B6B3D] opacity-90"></div>
+        <div className="absolute inset-0 bg-[#8B6B3D] opacity-80"></div>
         <div className="container mx-auto px-4 text-center relative z-10">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">About Olosuashi</h1>
           <p className="text-xl max-w-2xl mx-auto">Discover our story, values, and the team behind your unforgettable African adventures</p>

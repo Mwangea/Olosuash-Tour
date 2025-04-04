@@ -452,9 +452,9 @@ const checkWishlist = async (req, res, next) => {
 /**
  * @desc    Get tour statistics
  * @route   GET /api/tours/stats
- * @access  Admin
+ * @access  Public
  */
-const getTourStats = async (req, res, next) => {
+getTourStats = async (req, res, next) => {
   try {
     const stats = await Tour.getStats();
     
@@ -465,7 +465,8 @@ const getTourStats = async (req, res, next) => {
       }
     });
   } catch (error) {
-    next(error);
+    console.error('Error in getTourStats:', error);
+    next(new AppError('Failed to load tour statistics', 500));
   }
 };
 

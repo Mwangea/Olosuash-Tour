@@ -26,7 +26,8 @@ const corsOptions = {
   origin: [
     'http://localhost:3000',   // React development server
     'http://localhost:5173',   // Vite development server
-    'http://localhost:8000'    // Backend server
+    'http://localhost:8000',   // Backend server
+    process.env.FRONTEND_URL   // Production frontend URL (add this)
   ],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: [
@@ -46,20 +47,37 @@ app.use(cors(corsOptions));
 // Handle OPTIONS requests explicitly
 app.options('*', cors(corsOptions));
 
-// Debugging middleware
-
-
 // Set security HTTP headers
 app.use(helmet());
 
-// Rate limiting
-const limiter = rateLimit({
+// Add trust proxy if behind a reverse proxy like Nginx or using a platform like Heroku
+app.set('trust proxy', 1);
+
+// More lenient general API rate limiting
+const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again after 15 minutes'
+  max: 200, // increased from 100 to 200
+  message: 'Too many requests from this IP, please try again after 15 minutes',
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  // Add skip function for certain conditions if needed
+  skip: (req) => {
+    // Example: skip rate limiting for certain IPs or in development
+    return process.env.NODE_ENV === 'development';
+  }
 });
 
-app.use('/api', limiter);
+// Stricter auth route limiting (often targeted by brute force)
+const authLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 30, // 20 login attempts per hour
+  message: 'Too many authentication attempts, please try again after an hour'
+});
+
+// Apply different rate limiters to different routes
+app.use('/api', apiLimiter);
+app.use('/api/auth/login', authLimiter); // Stricter limits on login attempts
+app.use('/api/auth/register', authLimiter); // Stricter limits on registration
 
 // Body parser for JSON and urlencoded
 app.use(express.json({ limit: '10kb' }));
@@ -74,6 +92,15 @@ app.use(xss());
 // Development logging
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
+}
+
+// Add request logging in production for debugging rate limit issues
+if (process.env.NODE_ENV === 'production') {
+  // Simple request logger for debugging rate limit issues
+  app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.originalUrl} - ${req.ip}`);
+    next();
+  });
 }
 
 // Initialize passport
