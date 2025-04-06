@@ -1,80 +1,86 @@
 export interface Tour {
+  id: string;
+  title: string;
+  slug: string;
+  description: string;
+  summary: string;
+  duration: number;
+  maxGroupSize: number;
+  minGroupSize: number;
+  difficulty: string;
+  price: string;
+  price_per_guest: string;
+  discount_price: string | null;
+  rating: string;
+  rating_quantity: number;
+  featured: number;
+  accommodationDetails: string;
+  ratingQuantity?: number;
+  created_at: string;
+  updated_at: string;
+  cover_image: string;
+  images: {
     id: string;
+    image_path: string;
+    is_cover: boolean;
+  }[];
+  regions: {
+    id: string;
+    name: string;
+  }[];
+  vehicles: {
+    id: string;
+    vehicleType: string;
+    vehicleTypeId: string;
+    capacity: number;
+    isPrimary: boolean;
+  }[];
+  itinerary: {
+    id: string;
+    day: number;
     title: string;
-    slug: string;
     description: string;
-    summary: string;
-    duration: number;
-    max_group_size: number;
-    min_group_size: number;
-    difficulty: string;
-    price: number;
-    discount_price: number | null;
-    featured: boolean;
-    accommodation_details: string;
-    rating?: number | null;  // Make rating optional
-    rating_quantity?: number;
-    created_at: string;
-    updated_at: string;
-    cover_image: string;
-    images: {
-      id: string;
-      image_path: string;
-      is_cover: boolean;
-    }[];
-    regions: {
-      id: string;
-      name: string;
-    }[];
-    vehicles: {
-      id: string;
-      vehicle_type: string;
-      vehicle_type_id: string;
-      capacity: number;
-      is_primary: boolean;
-    }[];
-    itinerary: {
-      id: string;
-      day: number;
-      title: string;
-      description: string;
-    }[];
-    locations: {
-      id: string;
-      name: string;
-      description: string | null;
-      latitude: number;
-      longitude: number;
-      day: number | null;
-    }[];
-    includedServices: {
-      id: string;
-      name: string;
-      description: string;
-      details: string | null;
-    }[];
-    excludedServices: {
-      id: string;
-      name: string;
-      description: string;
-      details: string | null;
-    }[];
-    availability: {
-      id: string;
-      start_date: string;
-      end_date: string;
-      available_spots: number;
-    }[];
-    reviews: {
-      id: string;
-      rating: number;
-      review: string;
-      created_at: string;
-      user_id: string;
-      username: string;
-      profile_picture: string;
-    }[];
-  }
+  }[];
+  locations: {
+    id: string;
+    name: string;
+    description: string | null;
+    latitude: number;
+    longitude: number;
+    day: number | null;
+  }[];
+  includedServices: {
+    id: string;
+    name: string;
+    description: string;
+    details: string | null;
+  }[];
+  excludedServices: {
+    id: string;
+    name: string;
+    description: string;
+    details: string | null;
+  }[];
+  availability: {
+    id: string;
+    startDate: string;
+    endDate: string;
+    availableSpots: number;
+  }[];
+  reviews: {
+    id: string;
+    rating: number;
+    review: string;
+    createdAt: string;
+    userId: string;
+    username: string;
+    profilePicture: string;
+  }[];
+  totalPrice?: number;
+  priceDisplay?: string;
+  discountPriceDisplay?: string | null;
+  calculatedForGroupSize?: number;
+}
 
   export interface ApiResponse {
     status: string;
