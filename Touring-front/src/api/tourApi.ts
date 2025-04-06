@@ -12,8 +12,8 @@ export interface Tour {
     discount_price: number | null;
     featured: boolean;
     accommodation_details: string;
-    rating: number | null;
-    rating_quantity: number;
+    rating?: number | null;  // Make rating optional
+    rating_quantity?: number;
     created_at: string;
     updated_at: string;
     cover_image: string;
@@ -134,8 +134,8 @@ export interface Tour {
     description: string;
     summary: string;
     duration: number;
-    max_group_size: number;
-    min_group_size: number;
+    maxGroupSize: number;
+    minGroupSize: number;
     difficulty: 'easy' | 'medium' | 'difficult';
     price: number;
     discount_price: number | null;
@@ -143,9 +143,9 @@ export interface Tour {
     accommodation_details: string;
     regions: string[];
     vehicles: {
-      vehicle_type_id: string;
+      vehicleTypeId: string;
       capacity: number;
-      is_primary: boolean;
+      isPrimary: boolean;
     }[];
     itinerary: {
       day: number;
@@ -160,12 +160,12 @@ export interface Tour {
       day: number | null;
     }[];
     included_services: {
-      service_id: string;
-      details: string;
+      serviceId: string;
+      details?: string;
     }[];
     excluded_services: {
-      service_id: string;
-      details: string;
+      serviceId: string;
+      details?: string;
     }[];
     availability: {
       start_date: string;

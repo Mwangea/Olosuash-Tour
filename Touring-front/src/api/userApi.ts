@@ -18,6 +18,7 @@ export interface UserProfile {
   country: string | null;
   postal_code: string | null;
   [key: string]: unknown;
+  
 }
 
 export interface ProfileContext {

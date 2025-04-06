@@ -30,7 +30,7 @@ import AdminUser from './admin/pages/AdminUser';
 import AdminTour from './admin/pages/AdminTour';
 import AdminBooking from './admin/pages/AdminBooking';
 import UnauthorizedPage from './pages/UnauthorizedPage';
-import ProtectedRoute from './components/ProtectedRoute';
+
 import TourForm from './admin/pages/TourForm';
 
 // Create a User Layout component with Header and Footer
@@ -56,8 +56,9 @@ function ProfileContextWrapper() {
 function App() {
   return (
     <>
+    <BrowserRouter>
       <AuthProvider>
-        <BrowserRouter>
+        
           {/* Toast notifications */}
           <Toaster
             position="top-right"
@@ -94,8 +95,8 @@ function App() {
             
             {/* Admin Routes - no header/footer */}
             {/* Redirect /admin to /admin/dashboard */}
-            <Route path="/admin" element={<ProtectedRoute adminOnly={true}><Navigate to="/admin/dashboard" replace /></ProtectedRoute>} />
-            <Route element={<ProtectedRoute adminOnly={true} />}>
+            <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+            
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path='/admin/profile' element={<UpdateProfilePage />} />
             <Route path='/admin/hero' element={<AdminHero />} />
@@ -104,7 +105,7 @@ function App() {
             <Route path='/admin/bookings' element={<AdminBooking />} />
             <Route path="/admin/tours/new" element={<TourForm />} />
             <Route path="/admin/tours/edit/:id" element={<TourForm />} />
-            </Route>
+            
 
             {/* User Routes - with header/footer */}
             <Route path='/' element={<UserLayout><Home /></UserLayout>} />
@@ -115,7 +116,7 @@ function App() {
             <Route path='/faq' element={<UserLayout><FAQPage /></UserLayout>} />
             
          
-            <Route path="/profile" element={<ProtectedRoute><UserLayout><Profile /></UserLayout></ProtectedRoute>}>
+            <Route path="/profile" element={<UserLayout><Profile /></UserLayout>}>
             <Route index element={<ProfileContextWrapper />} />
             <Route path="bookings" element={<Bookings />} />
             <Route path="wishlist" element={<Wishlist />} />
@@ -135,8 +136,9 @@ function App() {
             {/* Catch-all route */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          </AuthProvider>
         </BrowserRouter>
-      </AuthProvider>
+      
     </>
   );
 }

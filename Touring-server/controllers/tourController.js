@@ -14,16 +14,29 @@ const createTour = async (req, res, next) => {
     const images = [];
     if (req.files && req.files.length > 0) {
       req.files.forEach(file => {
-        images.push(`/uploads/tour-images/${file.filename}`);
+        images.push({
+          image_path: `/uploads/tour-images/${file.filename}`,
+          is_cover: false
+        });
       });
+      // Set first image as cover
+      if (images.length > 0) images[0].is_cover = true;
     }
-    
-    const tour = await Tour.create(req.body, images);
+
+    // Calculate price per guest if not provided
+    if (!req.body.pricePerGuest) {
+      req.body.pricePerGuest = req.body.price / (req.body.minGroupSize || 1);
+    }
+
+    const tour = await Tour.create({
+      ...req.body,
+      images
+    });
     
     res.status(201).json({
       status: 'success',
       data: {
-        tour
+        tour: formatTourResponse(tour)
       }
     });
   } catch (error) {
@@ -37,6 +50,30 @@ const createTour = async (req, res, next) => {
     }
     next(error);
   }
+};
+
+/**
+ * Format tour response with calculated prices and proper structure
+ */
+const formatTourResponse = (tour, groupSize = null) => {
+  const calculatedGroupSize = groupSize || tour.minGroupSize || 1;
+  const totalPrice = tour.pricePerGuest * calculatedGroupSize;
+  const discountPrice = tour.discount_price ? 
+    (tour.discount_price / (tour.minGroupSize || 1)) * calculatedGroupSize : 
+    null;
+
+  return {
+    ...tour,
+    price: tour.price, // Original total price for default group size
+    pricePerGuest: tour.pricePerGuest,
+    totalPrice,
+    discountPrice,
+    priceDisplay: `Total Cost for ${calculatedGroupSize} Guests: $${totalPrice.toLocaleString()}`,
+    discountPriceDisplay: discountPrice ? 
+      `Discounted Price for ${calculatedGroupSize} Guests: $${discountPrice.toLocaleString()}` : 
+      null,
+    calculatedForGroupSize: calculatedGroupSize
+  };
 };
 
 /**
@@ -57,7 +94,8 @@ const getAllTours = async (req, res, next) => {
       maxPrice: req.query.maxPrice ? parseFloat(req.query.maxPrice) : undefined,
       difficulty: ['easy', 'medium', 'difficult'].includes(req.query.difficulty) ? req.query.difficulty : undefined,
       duration: req.query.duration ? parseInt(req.query.duration) : undefined,
-      search: req.query.search || undefined
+      search: req.query.search || undefined,
+      regionId: req.query.regionId || undefined
     };
     
     const result = await Tour.findAll(options);
@@ -67,7 +105,7 @@ const getAllTours = async (req, res, next) => {
       results: result.tours.length,
       pagination: result.pagination,
       data: {
-        tours: result.tours
+        tours: result.tours.map(tour => formatTourResponse(tour))
       }
     });
   } catch (error) {
@@ -89,7 +127,7 @@ const getFeaturedTours = async (req, res, next) => {
       status: 'success',
       results: tours.length,
       data: {
-        tours
+        tours: tours.map(tour => formatTourResponse(tour))
       }
     });
   } catch (error) {
@@ -111,7 +149,7 @@ const getTopRatedTours = async (req, res, next) => {
       status: 'success',
       results: tours.length,
       data: {
-        tours
+        tours: tours.map(tour => formatTourResponse(tour))
       }
     });
   } catch (error) {
@@ -131,11 +169,14 @@ const getTourById = async (req, res, next) => {
     if (!tour) {
       return next(new AppError('Tour not found', 404));
     }
+
+    // Calculate price based on group size if provided
+    const groupSize = req.query.groupSize ? parseInt(req.query.groupSize) : tour.minGroupSize || 1;
     
     res.status(200).json({
       status: 'success',
       data: {
-        tour
+        tour: formatTourResponse(tour, groupSize)
       }
     });
   } catch (error) {
@@ -155,11 +196,13 @@ const getTourBySlug = async (req, res, next) => {
     if (!tour) {
       return next(new AppError('Tour not found', 404));
     }
+
+    const groupSize = req.query.groupSize ? parseInt(req.query.groupSize) : tour.minGroupSize || 1;
     
     res.status(200).json({
       status: 'success',
       data: {
-        tour
+        tour: formatTourResponse(tour, groupSize)
       }
     });
   } catch (error) {
@@ -174,21 +217,54 @@ const getTourBySlug = async (req, res, next) => {
  */
 const updateTour = async (req, res, next) => {
   try {
-    // Check if tour exists
-    const tourExists = await Tour.findById(req.params.id);
-    if (!tourExists) {
+    // First get the existing tour with all its relations
+    const existingTour = await Tour.findById(req.params.id);
+    
+    if (!existingTour) {
       return next(new AppError('Tour not found', 404));
     }
-    
-    const tour = await Tour.update(req.params.id, req.body);
+
+    // Merge existing data with updates (preserve unchanged fields)
+    const updatedData = {
+      ...existingTour,
+      ...req.body,
+      // Preserve relations unless explicitly overwritten
+      images: req.body.images || existingTour.images,
+      regions: req.body.regions || existingTour.regions,
+      vehicles: req.body.vehicles || existingTour.vehicles,
+      itinerary: req.body.itinerary || existingTour.itinerary,
+      locations: req.body.locations || existingTour.locations,
+      includedServices: req.body.includedServices || existingTour.includedServices,
+      excludedServices: req.body.excludedServices || existingTour.excludedServices,
+      availability: req.body.availability || existingTour.availability
+    };
+
+    // Process new images if uploaded
+    if (req.files && req.files.length > 0) {
+      const newImages = req.files.map(file => ({
+        image_path: `/uploads/tour-images/${file.filename}`,
+        is_cover: false
+      }));
+      updatedData.images = [...existingTour.images, ...newImages];
+    }
+
+    const updatedTour = await Tour.update(req.params.id, updatedData);
     
     res.status(200).json({
       status: 'success',
       data: {
-        tour
+        tour: formatTourResponse(updatedTour)
       }
     });
   } catch (error) {
+    // Clean up uploaded files if there was an error
+    if (req.files && req.files.length > 0) {
+      req.files.forEach(file => {
+        fs.unlink(file.path, (err) => {
+          if (err) console.error('Error deleting file:', err);
+        });
+      });
+    }
     next(error);
   }
 };

@@ -2,13 +2,13 @@ const { pool } = require('../config/db');
 const slugify = require('slugify');
 
 const tourModel = {
+  
   /**
    * Create a new tour
    * @param {Object} tourData - Tour data
-   * @param {Array} imagePaths - Array of image paths
    * @returns {Promise<Object>} Newly created tour
    */
-  async create(tourData, imagePaths = []) {
+  async create(tourData) {
     const connection = await pool.getConnection();
     
     try {
@@ -17,12 +17,16 @@ const tourModel = {
       // Create slug from title
       const slug = slugify(tourData.title, { lower: true });
       
+      // Calculate price per guest if not provided
+      const pricePerGuest = tourData.pricePerGuest || 
+                         (tourData.price / (tourData.minGroupSize || 1));
+      
       // Insert tour
       const [result] = await connection.query(
         `INSERT INTO tours 
         (title, slug, description, summary, duration, max_group_size, min_group_size, 
-         difficulty, price, discount_price, featured, accommodation_details) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         difficulty, price, price_per_guest, discount_price, featured, accommodation_details) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           tourData.title,
           slug,
@@ -33,6 +37,7 @@ const tourModel = {
           tourData.minGroupSize || 1,
           tourData.difficulty,
           tourData.price,
+          pricePerGuest,
           tourData.discountPrice || null,
           tourData.featured || false,
           tourData.accommodationDetails
@@ -42,11 +47,11 @@ const tourModel = {
       const tourId = result.insertId;
       
       // Insert tour images
-      if (imagePaths && imagePaths.length > 0) {
-        const imageValues = imagePaths.map((path, index) => [
+      if (tourData.images && tourData.images.length > 0) {
+        const imageValues = tourData.images.map((image, index) => [
           tourId,
-          path,
-          index === 0 // First image is cover by default
+          image.image_path,
+          image.is_cover || (index === 0) // First image is cover by default
         ]);
         
         await connection.query(
@@ -149,252 +154,269 @@ const tourModel = {
     }
   },
   
-  /**
+ /**
    * Get all tours with pagination and filtering
    * @param {Object} options - Query options
    * @returns {Promise<Object>} Tours and pagination info
    */
-  async findAll(options = {}) {
-    const {
-      page = 1,
-      limit = 10,
-      sort = 'created_at',
-      order = 'DESC',
-      featured,
-      minPrice,
-      maxPrice,
-      difficulty,
-      duration,
-      search,
-      regionId
-    } = options;
-    
-    // Calculate offset for pagination
-    const offset = (page - 1) * limit;
-    
-    // Start building the query
-    let query = `
-      SELECT 
-        t.*,
-        (SELECT image_path FROM tour_images WHERE tour_id = t.id AND is_cover = 1 LIMIT 1) as cover_image,
-        (SELECT AVG(rating) FROM tour_reviews WHERE tour_id = t.id) as average_rating,
-        (SELECT COUNT(*) FROM tour_reviews WHERE tour_id = t.id) as review_count
-      FROM tours t
-      WHERE 1=1
-    `;
-    
-    // Array to hold query parameters
-    const queryParams = [];
-    
-    // Add filters if provided
-    if (featured !== undefined) {
-      query += ` AND t.featured = ?`;
-      queryParams.push(featured);
-    }
-    
-    if (minPrice) {
-      query += ` AND t.price >= ?`;
-      queryParams.push(minPrice);
-    }
-    
-    if (maxPrice) {
-      query += ` AND t.price <= ?`;
-      queryParams.push(maxPrice);
-    }
-    
-    if (difficulty) {
-      query += ` AND t.difficulty = ?`;
-      queryParams.push(difficulty);
-    }
-    
-    if (duration) {
-      query += ` AND t.duration = ?`;
-      queryParams.push(duration);
-    }
-    
-    if (search) {
-      query += ` AND (t.title LIKE ? OR t.description LIKE ? OR t.summary LIKE ?)`;
-      const searchTerm = `%${search}%`;
-      queryParams.push(searchTerm, searchTerm, searchTerm);
-    }
-
-    if (regionId) {
-      query += ` AND t.id IN (SELECT tour_id FROM tour_regions WHERE region_id = ?)`;
-      queryParams.push(regionId);
-    }
-    
-    // Validate sort field to prevent SQL injection
-    const validSortFields = ['created_at', 'price', 'title', 'duration', 'average_rating'];
-    const safeSort = validSortFields.includes(sort) ? sort : 'created_at';
-    
-    // Handle special case for average_rating which is a calculated field
-    const sortField = safeSort === 'average_rating' 
-      ? '(SELECT AVG(rating) FROM tour_reviews WHERE tour_id = t.id)'
-      : `t.${safeSort}`;
-    
-    // Add sorting
-    query += ` ORDER BY ${sortField} ${order === 'ASC' ? 'ASC' : 'DESC'}`;
-    
-    // Add pagination
-    query += ` LIMIT ? OFFSET ?`;
-    queryParams.push(parseInt(limit), parseInt(offset));
-    
-    // Execute query
-    const [rows] = await pool.query(query, queryParams);
-    
-    // Count total tours for pagination info
-    let countQuery = `SELECT COUNT(*) as total FROM tours t WHERE 1=1`;
-    const countParams = [];
-    
-    // Rebuild the WHERE clause for count query
-    if (featured !== undefined) {
-      countQuery += ` AND t.featured = ?`;
-      countParams.push(featured);
-    }
-    
-    if (minPrice) {
-      countQuery += ` AND t.price >= ?`;
-      countParams.push(minPrice);
-    }
-    
-    if (maxPrice) {
-      countQuery += ` AND t.price <= ?`;
-      countParams.push(maxPrice);
-    }
-    
-    if (difficulty) {
-      countQuery += ` AND t.difficulty = ?`;
-      countParams.push(difficulty);
-    }
-    
-    if (duration) {
-      countQuery += ` AND t.duration = ?`;
-      countParams.push(duration);
-    }
-    
-    if (search) {
-      countQuery += ` AND (t.title LIKE ? OR t.description LIKE ? OR t.summary LIKE ?)`;
-      const searchTerm = `%${search}%`;
-      countParams.push(searchTerm, searchTerm, searchTerm);
-    }
-
-    if (regionId) {
-      countQuery += ` AND t.id IN (SELECT tour_id FROM tour_regions WHERE region_id = ?)`;
-      countParams.push(regionId);
-    }
-    
-    const [countResult] = await pool.query(countQuery, countParams);
-    
-    const total = countResult[0].total;
-    const totalPages = Math.ceil(total / limit);
-    
-    return {
-      tours: rows,
-      pagination: {
-        total,
-        totalPages,
-        currentPage: parseInt(page),
-        limit: parseInt(limit)
-      }
-    };
-  },
+ async findAll(options = {}) {
+  const {
+    page = 1,
+    limit = 10,
+    sort = 'created_at',
+    order = 'DESC',
+    featured,
+    minPrice,
+    maxPrice,
+    difficulty,
+    duration,
+    search,
+    regionId
+  } = options;
   
-  /**
+  // Calculate offset for pagination
+  const offset = (page - 1) * limit;
+  
+  // Start building the query
+  let query = `
+    SELECT 
+      t.*,
+      (SELECT image_path FROM tour_images WHERE tour_id = t.id AND is_cover = 1 LIMIT 1) as cover_image,
+      (SELECT AVG(rating) FROM tour_reviews WHERE tour_id = t.id) as rating,
+      (SELECT COUNT(*) FROM tour_reviews WHERE tour_id = t.id) as rating_quantity
+    FROM tours t
+    WHERE 1=1
+  `;
+  
+  // Array to hold query parameters
+  const queryParams = [];
+  
+  // Add filters if provided
+  if (featured !== undefined) {
+    query += ` AND t.featured = ?`;
+    queryParams.push(featured);
+  }
+  
+  if (minPrice) {
+    query += ` AND t.price >= ?`;
+    queryParams.push(minPrice);
+  }
+  
+  if (maxPrice) {
+    query += ` AND t.price <= ?`;
+    queryParams.push(maxPrice);
+  }
+  
+  if (difficulty) {
+    query += ` AND t.difficulty = ?`;
+    queryParams.push(difficulty);
+  }
+  
+  if (duration) {
+    query += ` AND t.duration = ?`;
+    queryParams.push(duration);
+  }
+  
+  if (search) {
+    query += ` AND (t.title LIKE ? OR t.description LIKE ? OR t.summary LIKE ?)`;
+    const searchTerm = `%${search}%`;
+    queryParams.push(searchTerm, searchTerm, searchTerm);
+  }
+
+  if (regionId) {
+    query += ` AND t.id IN (SELECT tour_id FROM tour_regions WHERE region_id = ?)`;
+    queryParams.push(regionId);
+  }
+  
+  // Validate sort field to prevent SQL injection
+  const validSortFields = ['created_at', 'price', 'title', 'duration', 'rating'];
+  const safeSort = validSortFields.includes(sort) ? sort : 'created_at';
+  
+  // Handle special case for rating which is a calculated field
+  const sortField = safeSort === 'rating' 
+    ? '(SELECT AVG(rating) FROM tour_reviews WHERE tour_id = t.id)'
+    : `t.${safeSort}`;
+  
+  // Add sorting
+  query += ` ORDER BY ${sortField} ${order === 'ASC' ? 'ASC' : 'DESC'}`;
+  
+  // Add pagination
+  query += ` LIMIT ? OFFSET ?`;
+  queryParams.push(parseInt(limit), parseInt(offset));
+  
+  // Execute query
+  const [rows] = await pool.query(query, queryParams);
+  
+  // Get full details for each tour
+  const toursWithDetails = await Promise.all(
+    rows.map(async row => this.findById(row.id))
+  );
+  
+  // Count total tours for pagination info
+  let countQuery = `SELECT COUNT(*) as total FROM tours t WHERE 1=1`;
+  const countParams = [];
+  
+  // Rebuild the WHERE clause for count query
+  if (featured !== undefined) {
+    countQuery += ` AND t.featured = ?`;
+    countParams.push(featured);
+  }
+  
+  if (minPrice) {
+    countQuery += ` AND t.price >= ?`;
+    countParams.push(minPrice);
+  }
+  
+  if (maxPrice) {
+    countQuery += ` AND t.price <= ?`;
+    countParams.push(maxPrice);
+  }
+  
+  if (difficulty) {
+    countQuery += ` AND t.difficulty = ?`;
+    countParams.push(difficulty);
+  }
+  
+  if (duration) {
+    countQuery += ` AND t.duration = ?`;
+    countParams.push(duration);
+  }
+  
+  if (search) {
+    countQuery += ` AND (t.title LIKE ? OR t.description LIKE ? OR t.summary LIKE ?)`;
+    const searchTerm = `%${search}%`;
+    countParams.push(searchTerm, searchTerm, searchTerm);
+  }
+
+  if (regionId) {
+    countQuery += ` AND t.id IN (SELECT tour_id FROM tour_regions WHERE region_id = ?)`;
+    countParams.push(regionId);
+  }
+  
+  const [countResult] = await pool.query(countQuery, countParams);
+  
+  const total = countResult[0].total;
+  const totalPages = Math.ceil(total / limit);
+  
+  return {
+    tours: toursWithDetails,
+    pagination: {
+      total,
+      totalPages,
+      currentPage: parseInt(page),
+      limit: parseInt(limit)
+    }
+  };
+},
+  
+ /**
    * Find tour by ID
    * @param {number} id - Tour ID
    * @returns {Promise<Object|null>} Tour object or null if not found
    */
-  async findById(id) {
-    // Get the main tour information
-    const [tourRows] = await pool.query(
-      `SELECT * FROM tours WHERE id = ?`,
-      [id]
-    );
-    
-    if (tourRows.length === 0) {
-      return null;
-    }
-    
-    const tour = tourRows[0];
-    
-    // Get tour images
-    const [images] = await pool.query(
-      `SELECT id, image_path, is_cover FROM tour_images WHERE tour_id = ?`,
-      [id]
-    );
-    tour.images = images;
+ async findById(id) {
+  // Get the main tour information
+  const [tourRows] = await pool.query(
+    `SELECT *, price_per_guest FROM tours WHERE id = ?`,
+    [id]
+  );
+  
+  if (tourRows.length === 0) {
+    return null;
+  }
+  
+  const tour = tourRows[0];
+  
+  // Get tour images
+  const [images] = await pool.query(
+    `SELECT id, image_path, is_cover FROM tour_images WHERE tour_id = ?`,
+    [id]
+  );
+  tour.images = images;
 
-    // Get regions
-    const [regions] = await pool.query(`
-      SELECT r.* FROM tour_regions tr
-      JOIN regions r ON tr.region_id = r.id
-      WHERE tr.tour_id = ?
-    `, [id]);
-    tour.regions = regions;
+  // Get regions
+  const [regions] = await pool.query(`
+    SELECT r.id, r.name FROM tour_regions tr
+    JOIN regions r ON tr.region_id = r.id
+    WHERE tr.tour_id = ?
+  `, [id]);
+  tour.regions = regions;
 
-    // Get vehicles
-    const [vehicles] = await pool.query(`
-      SELECT vt.name as vehicle_type, tv.* FROM tour_vehicles tv
-      JOIN vehicle_types vt ON tv.vehicle_type_id = vt.id
-      WHERE tv.tour_id = ?
-    `, [id]);
-    tour.vehicles = vehicles;
-    
-    // Get tour itinerary
-    const [itinerary] = await pool.query(
-      `SELECT id, day, title, description FROM tour_itineraries 
-       WHERE tour_id = ? ORDER BY day ASC`,
-      [id]
-    );
-    tour.itinerary = itinerary;
-    
-    // Get tour locations
-    const [locations] = await pool.query(
-      `SELECT id, name, description, latitude, longitude, day 
-       FROM tour_locations WHERE tour_id = ?`,
-      [id]
-    );
-    tour.locations = locations;
-    
-    // Get included services
-    const [includedServices] = await pool.query(`
-      SELECT s.*, tis.details FROM tour_included_services tis
-      JOIN services s ON tis.service_id = s.id
-      WHERE tis.tour_id = ?
-    `, [id]);
-    tour.includedServices = includedServices;
-    
-    // Get excluded services
-    const [excludedServices] = await pool.query(`
-      SELECT s.*, tes.details FROM tour_excluded_services tes
-      JOIN services s ON tes.service_id = s.id
-      WHERE tes.tour_id = ?
-    `, [id]);
-    tour.excludedServices = excludedServices;
-    
-    // Get availability dates
-    const [availability] = await pool.query(
-      `SELECT id, start_date, end_date, available_spots 
-       FROM tour_availability WHERE tour_id = ?`,
-      [id]
-    );
-    tour.availability = availability;
-    
-    // Get reviews
-    const [reviews] = await pool.query(
-      `SELECT 
-         r.id, r.rating, r.review, r.created_at,
-         u.id as user_id, u.username, u.profile_picture
-       FROM tour_reviews r
-       JOIN users u ON r.user_id = u.id
-       WHERE r.tour_id = ?
-       ORDER BY r.created_at DESC`,
-      [id]
-    );
-    tour.reviews = reviews;
-    
-    return tour;
-  },
+  // Get vehicles
+  const [vehicles] = await pool.query(`
+    SELECT 
+      tv.id, 
+      tv.vehicle_type_id, 
+      vt.name as vehicle_type, 
+      tv.capacity, 
+      tv.is_primary 
+    FROM tour_vehicles tv
+    JOIN vehicle_types vt ON tv.vehicle_type_id = vt.id
+    WHERE tv.tour_id = ?
+  `, [id]);
+  tour.vehicles = vehicles;
+  
+  // Get tour itinerary
+  const [itinerary] = await pool.query(
+    `SELECT id, day, title, description FROM tour_itineraries 
+     WHERE tour_id = ? ORDER BY day ASC`,
+    [id]
+  );
+  tour.itinerary = itinerary;
+  
+  // Get tour locations
+  const [locations] = await pool.query(
+    `SELECT id, name, description, latitude, longitude, day 
+     FROM tour_locations WHERE tour_id = ?`,
+    [id]
+  );
+  tour.locations = locations;
+  
+  // Get included services
+  const [includedServices] = await pool.query(`
+    SELECT 
+      s.id, s.name, s.description, 
+      tis.details 
+    FROM tour_included_services tis
+    JOIN services s ON tis.service_id = s.id
+    WHERE tis.tour_id = ?
+  `, [id]);
+  tour.includedServices = includedServices;
+  
+  // Get excluded services
+  const [excludedServices] = await pool.query(`
+    SELECT 
+      s.id, s.name, s.description, 
+      tes.details 
+    FROM tour_excluded_services tes
+    JOIN services s ON tes.service_id = s.id
+    WHERE tes.tour_id = ?
+  `, [id]);
+  tour.excludedServices = excludedServices;
+  
+  // Get availability dates
+  const [availability] = await pool.query(
+    `SELECT id, start_date, end_date, available_spots 
+     FROM tour_availability WHERE tour_id = ?`,
+    [id]
+  );
+  tour.availability = availability;
+  
+  // Get reviews
+  const [reviews] = await pool.query(
+    `SELECT 
+       r.id, r.rating, r.review, r.created_at,
+       u.id as user_id, u.username, u.profile_picture
+     FROM tour_reviews r
+     JOIN users u ON r.user_id = u.id
+     WHERE r.tour_id = ?
+     ORDER BY r.created_at DESC`,
+    [id]
+  );
+  tour.reviews = reviews;
+  
+  return tour;
+},
   
   /**
    * Find tour by slug
@@ -417,205 +439,199 @@ const tourModel = {
   },
   
   /**
-   * Update tour
-   * @param {number} id - Tour ID
-   * @param {Object} tourData - Tour data to update
-   * @returns {Promise<Object>} Updated tour
-   */
-  async update(id, tourData) {
-    const connection = await pool.getConnection();
-    
-    try {
-      await connection.beginTransaction();
-      
-      // Update slug if title is provided
-      if (tourData.title) {
-        tourData.slug = slugify(tourData.title, { lower: true });
-      }
-      
-      // Build the update query dynamically based on provided fields
-      const allowedFields = [
-        'title', 'slug', 'description', 'summary', 'duration', 
-        'max_group_size', 'min_group_size', 'difficulty', 'price', 
-        'discount_price', 'featured', 'accommodation_details'
-      ];
-      
-      const updateFields = [];
-      const updateValues = [];
-      
-      // Convert camelCase to snake_case for database
-      const fieldMapping = {
-        maxGroupSize: 'max_group_size',
-        minGroupSize: 'min_group_size',
-        discountPrice: 'discount_price',
-        accommodationDetails: 'accommodation_details'
-      };
-      
-      for (const [key, value] of Object.entries(tourData)) {
-        // Skip undefined or null values and non-allowed fields
-        if (value === undefined || value === null) continue;
-        
-        // Map camelCase to snake_case if needed
-        const dbField = fieldMapping[key] || key;
-        
-        if (allowedFields.includes(dbField)) {
-          updateFields.push(`${dbField} = ?`);
-          updateValues.push(value);
-        }
-      }
-      
-      if (updateFields.length > 0) {
-        // Append ID as the last parameter
-        updateValues.push(id);
-        
-        await connection.query(
-          `UPDATE tours SET ${updateFields.join(', ')} WHERE id = ?`,
-          updateValues
-        );
-      }
-      
-      // Handle regions updates if provided
-      if (tourData.regions) {
-        await connection.query(
-          `DELETE FROM tour_regions WHERE tour_id = ?`,
-          [id]
-        );
-        
-        if (tourData.regions.length > 0) {
-          await connection.query(
-            `INSERT INTO tour_regions (tour_id, region_id) VALUES ?`,
-            [tourData.regions.map(regionId => [id, regionId])]
-          );
-        }
-      }
-      
-      // Handle vehicles updates if provided
-      if (tourData.vehicles) {
-        await connection.query(
-          `DELETE FROM tour_vehicles WHERE tour_id = ?`,
-          [id]
-        );
-        
-        if (tourData.vehicles.length > 0) {
-          await connection.query(
-            `INSERT INTO tour_vehicles (tour_id, vehicle_type_id, capacity, is_primary) VALUES ?`,
-            [tourData.vehicles.map(v => [id, v.vehicleTypeId, v.capacity, v.isPrimary || false])]
-          );
-        }
-      }
-      
-      // Handle itinerary updates if provided
-      if (tourData.itinerary) {
-        await connection.query(
-          `DELETE FROM tour_itineraries WHERE tour_id = ?`,
-          [id]
-        );
-        
-        if (tourData.itinerary.length > 0) {
-          const itineraryValues = tourData.itinerary.map(item => [
-            id,
-            item.day,
-            item.title,
-            item.description
-          ]);
-          
-          await connection.query(
-            `INSERT INTO tour_itineraries (tour_id, day, title, description) VALUES ?`,
-            [itineraryValues]
-          );
-        }
-      }
-      
-      // Handle locations updates if provided
-      if (tourData.locations) {
-        await connection.query(
-          `DELETE FROM tour_locations WHERE tour_id = ?`,
-          [id]
-        );
-        
-        if (tourData.locations.length > 0) {
-          const locationValues = tourData.locations.map(location => [
-            id,
-            location.name,
-            location.description || null,
-            location.latitude,
-            location.longitude,
-            location.day || null
-          ]);
-          
-          await connection.query(
-            `INSERT INTO tour_locations 
-            (tour_id, name, description, latitude, longitude, day) VALUES ?`,
-            [locationValues]
-          );
-        }
-      }
-      
-      // Handle included services updates if provided
-      if (tourData.includedServices) {
-        await connection.query(
-          `DELETE FROM tour_included_services WHERE tour_id = ?`,
-          [id]
-        );
-        
-        if (tourData.includedServices.length > 0) {
-          await connection.query(
-            `INSERT INTO tour_included_services (tour_id, service_id, details) VALUES ?`,
-            [tourData.includedServices.map(s => [id, s.serviceId, s.details || null])]
-          );
-        }
-      }
-      
-      // Handle excluded services updates if provided
-      if (tourData.excludedServices) {
-        await connection.query(
-          `DELETE FROM tour_excluded_services WHERE tour_id = ?`,
-          [id]
-        );
-        
-        if (tourData.excludedServices.length > 0) {
-          await connection.query(
-            `INSERT INTO tour_excluded_services (tour_id, service_id, details) VALUES ?`,
-            [tourData.excludedServices.map(s => [id, s.serviceId, s.details || null])]
-          );
-        }
-      }
-      
-      // Handle availability updates if provided
-      if (tourData.availability) {
-        await connection.query(
-          `DELETE FROM tour_availability WHERE tour_id = ?`,
-          [id]
-        );
-        
-        if (tourData.availability.length > 0) {
-          const availabilityValues = tourData.availability.map(date => [
-            id,
-            date.startDate,
-            date.endDate,
-            date.availableSpots
-          ]);
-          
-          await connection.query(
-            `INSERT INTO tour_availability 
-            (tour_id, start_date, end_date, available_spots) VALUES ?`,
-            [availabilityValues]
-          );
-        }
-      }
-      
-      await connection.commit();
-      
-      // Return the updated tour
-      return this.findById(id);
-      
-    } catch (error) {
-      await connection.rollback();
-      throw error;
-    } finally {
-      connection.release();
+ * Update tour
+ * @param {number} id - Tour ID
+ * @param {Object} tourData - Complete tour data including relations
+ * @returns {Promise<Object>} Updated tour
+ */
+async update(id, tourData) {
+  const connection = await pool.getConnection();
+  
+  try {
+    await connection.beginTransaction();
+
+    // Update slug if title is provided
+    if (tourData.title) {
+      tourData.slug = slugify(tourData.title, { lower: true });
     }
-  },
+
+    // Recalculate price per guest if price or group size changes
+    if (tourData.price || tourData.minGroupSize) {
+      const currentTour = await this.findById(id);
+      const minGroupSize = tourData.minGroupSize || currentTour.minGroupSize;
+      const price = tourData.price || currentTour.price;
+      tourData.pricePerGuest = price / minGroupSize;
+    }
+
+    // Build the update query dynamically based on provided fields
+    const allowedFields = [
+      'title', 'slug', 'description', 'summary', 'duration', 
+      'max_group_size', 'min_group_size', 'difficulty', 'price',
+      'price_per_guest', 'discount_price', 'featured', 'accommodation_details'
+    ];
+    
+    const updateFields = [];
+    const updateValues = [];
+    
+    // Convert camelCase to snake_case for database
+    const fieldMapping = {
+      maxGroupSize: 'max_group_size',
+      minGroupSize: 'min_group_size',
+      discountPrice: 'discount_price',
+      accommodationDetails: 'accommodation_details'
+    };
+    
+    for (const [key, value] of Object.entries(tourData)) {
+      // Skip undefined or null values and non-allowed fields
+      if (value === undefined || value === null) continue;
+      
+      // Map camelCase to snake_case if needed
+      const dbField = fieldMapping[key] || key;
+      
+      if (allowedFields.includes(dbField)) {
+        updateFields.push(`${dbField} = ?`);
+        updateValues.push(value);
+      }
+    }
+    
+    if (updateFields.length > 0) {
+      // Append ID as the last parameter
+      updateValues.push(id);
+      
+      await connection.query(
+        `UPDATE tours SET ${updateFields.join(', ')} WHERE id = ?`,
+        updateValues
+      );
+    }
+    
+    // Handle regions updates
+    await connection.query(
+      `DELETE FROM tour_regions WHERE tour_id = ?`,
+      [id]
+    );
+    
+    if (tourData.regions && tourData.regions.length > 0) {
+      await connection.query(
+        `INSERT INTO tour_regions (tour_id, region_id) VALUES ?`,
+        [tourData.regions.map(regionId => [id, regionId])]
+      );
+    }
+    
+    // Handle vehicles updates
+    await connection.query(
+      `DELETE FROM tour_vehicles WHERE tour_id = ?`,
+      [id]
+    );
+    
+    if (tourData.vehicles && tourData.vehicles.length > 0) {
+      await connection.query(
+        `INSERT INTO tour_vehicles (tour_id, vehicle_type_id, capacity, is_primary) VALUES ?`,
+        [tourData.vehicles.map(v => [id, v.vehicleTypeId, v.capacity, v.isPrimary || false])]
+      );
+    }
+    
+    // Handle itinerary updates
+    await connection.query(
+      `DELETE FROM tour_itineraries WHERE tour_id = ?`,
+      [id]
+    );
+    
+    if (tourData.itinerary && tourData.itinerary.length > 0) {
+      const itineraryValues = tourData.itinerary.map(item => [
+        id,
+        item.day,
+        item.title,
+        item.description
+      ]);
+      
+      await connection.query(
+        `INSERT INTO tour_itineraries (tour_id, day, title, description) VALUES ?`,
+        [itineraryValues]
+      );
+    }
+    
+    // Handle locations updates
+    await connection.query(
+      `DELETE FROM tour_locations WHERE tour_id = ?`,
+      [id]
+    );
+    
+    if (tourData.locations && tourData.locations.length > 0) {
+      const locationValues = tourData.locations.map(location => [
+        id,
+        location.name,
+        location.description || null,
+        location.latitude,
+        location.longitude,
+        location.day || null
+      ]);
+      
+      await connection.query(
+        `INSERT INTO tour_locations 
+        (tour_id, name, description, latitude, longitude, day) VALUES ?`,
+        [locationValues]
+      );
+    }
+    
+    // Handle included services updates
+    await connection.query(
+      `DELETE FROM tour_included_services WHERE tour_id = ?`,
+      [id]
+    );
+    
+    if (tourData.includedServices && tourData.includedServices.length > 0) {
+      await connection.query(
+        `INSERT INTO tour_included_services (tour_id, service_id, details) VALUES ?`,
+        [tourData.includedServices.map(s => [id, s.serviceId, s.details || null])]
+      );
+    }
+    
+    // Handle excluded services updates
+    await connection.query(
+      `DELETE FROM tour_excluded_services WHERE tour_id = ?`,
+      [id]
+    );
+    
+    if (tourData.excludedServices && tourData.excludedServices.length > 0) {
+      await connection.query(
+        `INSERT INTO tour_excluded_services (tour_id, service_id, details) VALUES ?`,
+        [tourData.excludedServices.map(s => [id, s.serviceId, s.details || null])]
+      );
+    }
+    
+    // Handle availability updates
+    await connection.query(
+      `DELETE FROM tour_availability WHERE tour_id = ?`,
+      [id]
+    );
+    
+    if (tourData.availability && tourData.availability.length > 0) {
+      const availabilityValues = tourData.availability.map(date => [
+        id,
+        date.startDate,
+        date.endDate,
+        date.availableSpots
+      ]);
+      
+      await connection.query(
+        `INSERT INTO tour_availability 
+        (tour_id, start_date, end_date, available_spots) VALUES ?`,
+        [availabilityValues]
+      );
+    }
+    
+    await connection.commit();
+    
+    // Return the updated tour with all relations
+    return this.findById(id);
+    
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+},
   
   /**
    * Delete tour
@@ -1008,24 +1024,36 @@ getDefaultStats() {
   },
   
   /**
-   * Get all service categories with their services
-   * @returns {Promise<Array>} Array of service categories
-   */
-  async getServiceCategories() {
-    const [rows] = await pool.query(
-      `SELECT sc.*, 
-              (SELECT JSON_ARRAYAGG(
-                JSON_OBJECT(
-                  'id', s.id, 
-                  'name', s.name, 
-                  'description', s.description
-                )
-              ) FROM services s WHERE s.category_id = sc.id) as services 
-       FROM service_categories sc 
-       ORDER BY sc.name`
+ * Get all service categories with their services
+ * @returns {Promise<Array>} Array of service categories
+ */
+async getServiceCategories() {
+  try {
+    // First get all categories
+    const [categories] = await pool.query(
+      'SELECT * FROM service_categories ORDER BY name'
     );
-    return rows;
+
+    // Then get services for each category
+    const categoriesWithServices = await Promise.all(
+      categories.map(async (category) => {
+        const [services] = await pool.query(
+          'SELECT id, name, description FROM services WHERE category_id = ?',
+          [category.id]
+        );
+        return {
+          ...category,
+          services: services || [] // Ensure services is always an array
+        };
+      })
+    );
+
+    return categoriesWithServices;
+  } catch (error) {
+    console.error('Error fetching service categories:', error);
+    throw error;
   }
+}
 };
 
 module.exports = tourModel;

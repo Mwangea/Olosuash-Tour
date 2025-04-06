@@ -70,7 +70,7 @@ const apiLimiter = rateLimit({
 // Stricter auth route limiting (often targeted by brute force)
 const authLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 30, // 20 login attempts per hour
+  max: 50, // 20 login attempts per hour
   message: 'Too many authentication attempts, please try again after an hour'
 });
 
