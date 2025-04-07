@@ -1,36 +1,48 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { FaStar, FaRegStar, FaArrowRight, FaArrowLeft } from 'react-icons/fa';
-import { IoMdTime } from 'react-icons/io';
-import { GiPathDistance } from 'react-icons/gi';
-import { Tour } from '../api/tourApi';
-import api from '../api/axios';
-
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { FaStar, FaRegStar, FaArrowRight, FaArrowLeft } from "react-icons/fa";
+import { IoMdTime } from "react-icons/io";
+import { GiPathDistance } from "react-icons/gi";
+import { Tour } from "../api/tourApi";
+import api from "../api/axios";
+import { BookingModal } from "./BookingModal";
+import WishlistIcon from "./WishlistIcon";
 
 const FeaturedSection = () => {
   const [tours, setTours] = useState<Tour[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentImageIndex, setCurrentImageIndex] = useState<Record<string, number>>({});
+  const [currentImageIndex, setCurrentImageIndex] = useState<
+    Record<string, number>
+  >({});
+  const [selectedTour, setSelectedTour] = useState<{
+    id: string;
+    title: string;
+    price: number;
+    duration: number;
+  } | null>(null);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchFeaturedTours = async () => {
       try {
         setLoading(true);
-        const response = await api.get('/tours/featured?limit=3');
+        const response = await api.get("/tours/featured?limit=3");
         const toursWithImages = response.data.data.tours.map((tour: Tour) => ({
           ...tour,
           // Ensure images array exists and has at least the cover image
-          images: tour.images?.length ? tour.images : [
-            {
-              id: 'cover',
-              image_path: tour.cover_image,
-              is_cover: true
-            }
-          ],
+          images: tour.images?.length
+            ? tour.images
+            : [
+                {
+                  id: "cover",
+                  image_path: tour.cover_image,
+                  is_cover: true,
+                },
+              ],
         }));
-        
+
         setTours(toursWithImages);
-        
+
         // Initialize image indexes
         const indexes: Record<string, number> = {};
         toursWithImages.forEach((tour: Tour) => {
@@ -38,7 +50,7 @@ const FeaturedSection = () => {
         });
         setCurrentImageIndex(indexes);
       } catch (error) {
-        console.error('Error fetching featured tours:', error);
+        console.error("Error fetching featured tours:", error);
       } finally {
         setLoading(false);
       }
@@ -50,39 +62,54 @@ const FeaturedSection = () => {
   useEffect(() => {
     if (tours.length > 0) {
       // Set up automatic image rotation for each tour
-      const intervals = tours.map(tour => {
-        if (tour.images && tour.images.length > 1) {
-          return setInterval(() => {
-            setCurrentImageIndex(prev => ({
-              ...prev,
-              [tour.id]: (prev[tour.id] + 1) % tour.images.length
-            }));
-          }, 5000);
-        }
-        return null;
-      }).filter(Boolean);
+      const intervals = tours
+        .map((tour) => {
+          if (tour.images && tour.images.length > 1) {
+            return setInterval(() => {
+              setCurrentImageIndex((prev) => ({
+                ...prev,
+                [tour.id]: (prev[tour.id] + 1) % tour.images.length,
+              }));
+            }, 5000);
+          }
+          return null;
+        })
+        .filter(Boolean);
 
-      return () => intervals.forEach(interval => clearInterval(interval as NodeJS.Timeout));
+      return () =>
+        intervals.forEach((interval) =>
+          clearInterval(interval as NodeJS.Timeout)
+        );
     }
   }, [tours]);
 
+  const handleBookNow = (tour: Tour) => {
+    setSelectedTour({
+      id: tour.id,
+      title: tour.title,
+      price: parseFloat(tour.price_per_guest),
+      duration: tour.duration,
+    });
+    setIsBookingModalOpen(true);
+  };
+
   const nextImage = (tourId: string) => {
-    const tour = tours.find(t => t.id === tourId);
+    const tour = tours.find((t) => t.id === tourId);
     if (!tour || !tour.images || tour.images.length <= 1) return;
 
-    setCurrentImageIndex(prev => ({
+    setCurrentImageIndex((prev) => ({
       ...prev,
-      [tourId]: (prev[tourId] + 1) % tour.images.length
+      [tourId]: (prev[tourId] + 1) % tour.images.length,
     }));
   };
 
   const prevImage = (tourId: string) => {
-    const tour = tours.find(t => t.id === tourId);
+    const tour = tours.find((t) => t.id === tourId);
     if (!tour || !tour.images || tour.images.length <= 1) return;
 
-    setCurrentImageIndex(prev => ({
+    setCurrentImageIndex((prev) => ({
       ...prev,
-      [tourId]: (prev[tourId] - 1 + tour.images.length) % tour.images.length
+      [tourId]: (prev[tourId] - 1 + tour.images.length) % tour.images.length,
     }));
   };
 
@@ -115,7 +142,10 @@ const FeaturedSection = () => {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[1, 2, 3].map((item) => (
-              <div key={item} className="bg-white rounded-xl shadow-lg overflow-hidden animate-pulse">
+              <div
+                key={item}
+                className="bg-white rounded-xl shadow-lg overflow-hidden animate-pulse"
+              >
                 <div className="h-64 bg-gray-200"></div>
                 <div className="p-6">
                   <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
@@ -145,10 +175,14 @@ const FeaturedSection = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {tours.map((tour) => {
             const currentIndex = currentImageIndex[tour.id] || 0;
-            const currentImage = tour.images?.[currentIndex]?.image_path || tour.cover_image;
+            const currentImage =
+              tour.images?.[currentIndex]?.image_path || tour.cover_image;
 
             return (
-              <div key={tour.id} className="bg-white rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-2">
+              <div
+                key={tour.id}
+                className="bg-white rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-2"
+              >
                 {/* Image Carousel */}
                 <div className="relative h-64 overflow-hidden">
                   {currentImage ? (
@@ -158,8 +192,15 @@ const FeaturedSection = () => {
                         alt={tour.title}
                         className="w-full h-full object-cover transition-opacity duration-500"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x300?text=Tour+Image';
+                          (e.target as HTMLImageElement).src =
+                            "https://via.placeholder.com/400x300?text=Tour+Image";
                         }}
+                      />
+                      <WishlistIcon
+                        tourId={tour.id}
+                        size={20}
+                        position="top-right"
+                        className="shadow-md"
                       />
                       {/* Navigation Arrows */}
                       {tour.images && tour.images.length > 1 && (
@@ -190,7 +231,11 @@ const FeaturedSection = () => {
                           {tour.images.map((_, index) => (
                             <div
                               key={index}
-                              className={`w-2 h-2 rounded-full ${currentIndex === index ? 'bg-white' : 'bg-white bg-opacity-50'}`}
+                              className={`w-2 h-2 rounded-full ${
+                                currentIndex === index
+                                  ? "bg-white"
+                                  : "bg-white bg-opacity-50"
+                              }`}
                             />
                           ))}
                         </div>
@@ -198,10 +243,16 @@ const FeaturedSection = () => {
                     </>
                   ) : (
                     <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                      <img 
-                        src="https://via.placeholder.com/400x300?text=No+Image" 
-                        alt="No tour image available" 
+                      <img
+                        src="https://via.placeholder.com/400x300?text=No+Image"
+                        alt="No tour image available"
                         className="w-full h-full object-cover"
+                      />
+                      <WishlistIcon
+                        tourId={tour.id}
+                        size={20}
+                        position="top-right"
+                        className="shadow-md"
                       />
                     </div>
                   )}
@@ -210,16 +261,20 @@ const FeaturedSection = () => {
                 {/* Tour Info */}
                 <div className="p-6">
                   <div className="flex justify-between items-start mb-3">
-                    <h3 className="text-xl font-bold text-gray-800 font-serif">{tour.title}</h3>
+                    <h3 className="text-xl font-bold text-gray-800 font-serif">
+                      {tour.title}
+                    </h3>
                     <div className="flex items-center bg-[#8B6B3D] text-white px-3 py-1 rounded-lg">
-                      <span className="text-sm font-medium">${tour.price_per_guest}</span>
+                      <span className="text-sm font-medium">
+                        ${tour.price_per_guest}
+                      </span>
                       <span className="text-xs ml-1">/person</span>
                     </div>
                   </div>
 
                   <div className="flex items-center mb-3">
                     <div className="flex mr-2">
-                      {renderRatingStars(parseFloat(tour.rating || '0'))}
+                      {renderRatingStars(parseFloat(tour.rating || "0"))}
                     </div>
                     <span className="text-sm text-gray-600">
                       ({tour.rating_quantity || 0} reviews)
@@ -233,7 +288,9 @@ const FeaturedSection = () => {
                         <div className="flex mr-1">
                           {renderRatingStars(tour.reviews[0].rating)}
                         </div>
-                        <span className="text-xs font-medium text-gray-700">{tour.reviews[0].username}</span>
+                        <span className="text-xs font-medium text-gray-700">
+                          {tour.reviews[0].username}
+                        </span>
                       </div>
                       <p className="text-gray-600 text-xs italic line-clamp-2">
                         "{tour.reviews[0].review}"
@@ -241,7 +298,9 @@ const FeaturedSection = () => {
                     </div>
                   )}
 
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-3">{tour.summary}</p>
+                  <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                    {tour.summary}
+                  </p>
 
                   <div className="flex items-center space-x-4 text-sm text-gray-600 mb-6">
                     <div className="flex items-center">
@@ -261,12 +320,12 @@ const FeaturedSection = () => {
                     >
                       View Details
                     </Link>
-                    <Link
-                      to={`/booking?tour=${tour.id}`}
+                    <button
+                      onClick={() => handleBookNow(tour)}
                       className="flex-1 text-center bg-[#8B6B3D] hover:bg-[#6B4F2D] text-white py-2 px-4 rounded-lg transition duration-300 font-medium"
                     >
                       Book Now
-                    </Link>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -280,12 +339,22 @@ const FeaturedSection = () => {
               to="/tours"
               className="inline-flex items-center text-[#8B6B3D] hover:text-[#6B4F2D] font-medium transition group"
             >
-              View All Tours 
+              View All Tours
               <FaArrowRight className="ml-2 transition-transform group-hover:translate-x-1" />
             </Link>
           </div>
         )}
       </div>
+      {selectedTour && (
+        <BookingModal
+          isOpen={isBookingModalOpen}
+          onClose={() => setIsBookingModalOpen(false)}
+          tourId={selectedTour.id}
+          tourTitle={selectedTour.title}
+          pricePerPerson={selectedTour.price}
+          tourDuration={selectedTour.duration}
+        />
+      )}
     </div>
   );
 };

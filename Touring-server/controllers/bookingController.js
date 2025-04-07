@@ -1,8 +1,10 @@
 const Booking = require('../models/bookingModel');
-const { sendBookingConfirmationEmail, sendBookingStatusUpdateEmail } = require('../services/emailService');
+const { sendBookingConfirmationEmail, sendBookingStatusUpdateEmail, sendAdminBookingNotificationEmail } = require('../services/emailService');
+const { sendAdminBookingNotification, sendUserBookingConfirmation } = require('../services/whatsappService');
 const { AppError } = require('../middleware/errorHandler');
 const logger = require('../utils/logger');
 
+// Create a new booking
 // Create a new booking
 exports.createBooking = async (req, res, next) => {
   try {
@@ -14,14 +16,9 @@ exports.createBooking = async (req, res, next) => {
       return next(new AppError('Please provide all required booking details', 400));
     }
 
-    // Validate travel date is in the future
-    if (new Date(travel_date) < new Date()) {
-      return next(new AppError('Travel date must be in the future', 400));
-    }
-
-    // Validate number of travelers
-    if (number_of_travelers < 1 || number_of_travelers > 20) {
-      return next(new AppError('Number of travelers must be between 1 and 20', 400));
+    // Validate WhatsApp number if payment method is WhatsApp
+    if (payment_method === 'whatsapp' && !whatsapp_number) {
+      return next(new AppError('WhatsApp number is required for WhatsApp payments', 400));
     }
 
     // Create booking
@@ -39,33 +36,80 @@ exports.createBooking = async (req, res, next) => {
       return next(new AppError('Booking creation failed', 500));
     }
 
-    // Generate WhatsApp link if payment method is WhatsApp
-    if (payment_method === 'whatsapp') {
-      const whatsappNumber = await Booking.getSetting('admin_whatsapp_number');
-      if (whatsappNumber) {
-        const message = `New booking for ${booking.tour_title} on ${new Date(travel_date).toLocaleDateString()} for ${number_of_travelers} people. Total: $${booking.total_price}`;
-        booking.whatsapp_url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+    // Get full booking details with proper error handling
+    let fullBooking;
+    try {
+      fullBooking = await Booking.findById(booking.id);
+      if (!fullBooking) {
+        throw new Error('Booking details not found');
       }
+    } catch (err) {
+      logger.error(`Error fetching booking details: ${err.message}`);
+      // Use basic booking info if details can't be fetched
+      fullBooking = booking;
     }
 
-    // Send confirmation email
-    await sendBookingConfirmationEmail(booking);
+    try {
+      // Send confirmation email to user
+      await sendBookingConfirmationEmail(fullBooking);
+      logger.info(`Confirmation email sent to user for booking ${fullBooking.id}`);
+      
+      // Send admin notification email
+      await sendAdminBookingNotificationEmail(fullBooking);
+      logger.info(`Admin notification email sent for booking ${fullBooking.id}`);
+    } catch (emailError) {
+      logger.error(`Email notification failed for booking ${fullBooking.id}: ${emailError.message}`);
+    }
+
+    try {
+      // Send WhatsApp notifications
+      if (fullBooking.payment_method === 'whatsapp' && fullBooking.whatsapp_number) {
+        // Send confirmation to user
+        const userWhatsappResult = await sendUserBookingConfirmation({
+          id: fullBooking.id,
+          tour_title: fullBooking.tour_title,
+          travel_date: fullBooking.travel_date,
+          number_of_travelers: fullBooking.number_of_travelers,
+          total_price: fullBooking.total_price,
+          whatsapp_number: fullBooking.whatsapp_number
+        });
+        
+        if (userWhatsappResult.success) {
+          fullBooking.whatsapp_url = userWhatsappResult.whatsappUrl;
+          await Booking.updateWhatsappUrl(fullBooking.id, userWhatsappResult.whatsappUrl);
+          logger.info(`WhatsApp confirmation sent to user for booking ${fullBooking.id}`);
+        } else {
+          logger.error(`Failed to send WhatsApp to user for booking ${fullBooking.id}: ${userWhatsappResult.error}`);
+        }
+      }
+      
+      // Send WhatsApp notification to admin
+      const adminWhatsappResult = await sendAdminWhatsapp(fullBooking);
+      if (adminWhatsappResult.success) {
+        logger.info(`Admin WhatsApp notification sent for booking ${fullBooking.id}`);
+      } else {
+        logger.error(`Failed to send WhatsApp to admin for booking ${fullBooking.id}: ${adminWhatsappResult.error}`);
+      }
+    } catch (whatsappError) {
+      logger.error(`WhatsApp notification failed for booking ${fullBooking.id}: ${whatsappError.message}`);
+    }
 
     res.status(201).json({
       status: 'success',
       data: {
         booking: {
-          id: booking.id,
-          tour_id: booking.tour_id,
-          tour_title: booking.tour_title,
-          travel_date: booking.travel_date,
-          number_of_travelers: booking.number_of_travelers,
-          total_price: booking.total_price,
-          status: booking.status,
-          payment_method: booking.payment_method,
-          whatsapp_url: booking.whatsapp_url,
-          tour_duration: booking.tour_duration,
-          created_at: booking.created_at
+          id: fullBooking.id,
+          tour_id: fullBooking.tour_id,
+          tour_title: fullBooking.tour_title || 'Tour',
+          travel_date: fullBooking.travel_date,
+          number_of_travelers: fullBooking.number_of_travelers,
+          total_price: fullBooking.total_price,
+          status: fullBooking.status,
+          payment_method: fullBooking.payment_method,
+          whatsapp_url: fullBooking.whatsapp_url,
+          tour_duration: fullBooking.tour_duration,
+          created_at: fullBooking.created_at,
+          phone: fullBooking.user_phone
         }
       }
     });
@@ -74,6 +118,7 @@ exports.createBooking = async (req, res, next) => {
     next(error);
   }
 };
+
 
 // Get all bookings (admin) or user's bookings
 exports.getBookings = async (req, res, next) => {
@@ -181,6 +226,7 @@ exports.getBooking = async (req, res, next) => {
 };
 
 // Update booking status (admin only)
+// Update booking status (admin only)
 exports.updateBookingStatus = async (req, res, next) => {
   try {
     const { status, admin_notes } = req.body;
@@ -201,8 +247,19 @@ exports.updateBookingStatus = async (req, res, next) => {
       admin_notes
     );
 
-    // Send status update email
-    await sendBookingStatusUpdateEmail(updatedBooking);
+    try {
+      // Send status update email to user
+      await sendBookingStatusUpdateEmail(updatedBooking);
+      logger.info(`Status update email sent for booking ${updatedBooking.id}`);
+      
+      // If status is approved, send another notification to admin
+      if (status === 'approved') {
+        await sendAdminBookingNotificationEmail(updatedBooking);
+        logger.info(`Approval notification sent to admin for booking ${updatedBooking.id}`);
+      }
+    } catch (emailError) {
+      logger.error(`Failed to send status update emails for booking ${updatedBooking.id}: ${emailError.message}`);
+    }
 
     res.status(200).json({
       status: 'success',

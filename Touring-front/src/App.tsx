@@ -32,6 +32,9 @@ import AdminBooking from './admin/pages/AdminBooking';
 import UnauthorizedPage from './pages/UnauthorizedPage';
 
 import TourForm from './admin/pages/TourForm';
+import Tour from './pages/Tour';
+import { BookingProvider } from './context/BookingContext';
+import { BookingSuccess } from './pages/BookingSuccess';
 
 // Create a User Layout component with Header and Footer
 const UserLayout = ({ children }: { children: React.ReactNode }) => {
@@ -58,6 +61,7 @@ function App() {
     <>
     <BrowserRouter>
       <AuthProvider>
+      <BookingProvider>
         
           {/* Toast notifications */}
           <Toaster
@@ -114,6 +118,8 @@ function App() {
             <Route path='/about/olosuashi-tours' element={<UserLayout><AboutPage /></UserLayout>} />
             <Route path='/about/safari-guide' element={<UserLayout><SafariGuides /></UserLayout>} />
             <Route path='/faq' element={<UserLayout><FAQPage /></UserLayout>} />
+            <Route path='/tours' element={<UserLayout><Tour /></UserLayout>} />
+            <Route path="/booking-success" element={<UserLayout><BookingSuccess /></UserLayout>} />
             
          
             <Route path="/profile" element={<UserLayout><Profile /></UserLayout>}>
@@ -136,6 +142,7 @@ function App() {
             {/* Catch-all route */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          </BookingProvider>
           </AuthProvider>
         </BrowserRouter>
       

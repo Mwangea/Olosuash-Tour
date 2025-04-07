@@ -11,6 +11,7 @@ export interface User {
   profile_picture?: string | null;
   auth_provider: string;
   is_verified: boolean;
+  phone?: string;
 }
 
 export interface AuthTokens {

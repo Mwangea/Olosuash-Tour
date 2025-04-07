@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
-import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
-import api from '../api/axios';
+import { useState, useEffect, useRef } from "react";
+import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import api from "../api/axios";
+import { Link } from "react-router-dom";
 
 interface HeroSlide {
   id: number;
@@ -19,19 +20,21 @@ const HeroSlider = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const sliderRef = useRef<HTMLDivElement>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | undefined>(
+    undefined
+  );
 
   // Fetch hero slides from API
   useEffect(() => {
     const fetchHeroSlides = async () => {
       try {
-        const response = await api.get('/hero');
+        const response = await api.get("/hero");
         setSlides(response.data.data.slides);
         setLoading(false);
       } catch (err) {
-        setError('Failed to load hero slides');
+        setError("Failed to load hero slides");
         setLoading(false);
-        console.error('Error fetching hero slides:', err);
+        console.error("Error fetching hero slides:", err);
       }
     };
 
@@ -93,7 +96,7 @@ const HeroSlider = () => {
       <div className="w-full h-screen flex items-center justify-center bg-gray-100">
         <div className="text-center text-red-500">
           <p>{error}</p>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="mt-4 bg-[#8B6B3D] text-white px-4 py-2 rounded"
           >
@@ -117,23 +120,26 @@ const HeroSlider = () => {
   return (
     <div className="relative w-full h-screen overflow-hidden" ref={sliderRef}>
       {/* Slides */}
-      <div 
+      <div
         className="flex transition-transform duration-700 ease-in-out"
         style={{ transform: `translateX(-${currentSlide * 100}%)` }}
       >
         {slides.map((slide) => (
-          <div 
+          <div
             key={slide.id}
             className="w-full flex-shrink-0 relative h-screen"
           >
             {/* Background Image */}
-            <div 
+            <div
               className="absolute inset-0 bg-cover bg-center"
               style={{ backgroundImage: `url(${slide.image_path})` }}
             >
-              <div className="absolute inset-0 bg-black bg-opacity-40" style={{ opacity: 0.4}}></div>
+              <div
+                className="absolute inset-0 bg-black bg-opacity-40"
+                style={{ opacity: 0.4 }}
+              ></div>
             </div>
-            
+
             {/* Content */}
             <div className="relative h-full flex flex-col justify-center items-center text-center px-4">
               <div className="max-w-3xl mx-auto text-white">
@@ -144,12 +150,16 @@ const HeroSlider = () => {
                   {slide.description}
                 </p>
                 <div className="flex flex-col sm:flex-row justify-center gap-4 animate-fadeIn delay-200">
-                  <button className="bg-[#8B6B3D] hover:bg-[#6B4F2D] text-white font-bold py-3 px-6 rounded-lg transition duration-300">
-                    Explore Tours
-                  </button>
-                  <button className="bg-transparent hover:bg-white hover:text-[#8B6B3D] text-white font-bold py-3 px-6 border-2 border-white rounded-lg transition duration-300">
-                    Contact Us
-                  </button>
+                  <Link to="/tours" className="inline-block">
+                    <button className="bg-[#8B6B3D] hover:bg-[#6B4F2D] text-white font-bold py-3 px-6 rounded-lg transition duration-300">
+                      Explore Tours
+                    </button>
+                  </Link>
+                  <Link to="/contact" className="inline-block">
+                    <button className="bg-transparent hover:bg-white hover:text-[#8B6B3D] text-white font-bold py-3 px-6 border-2 border-white rounded-lg transition duration-300">
+                      Contact Us
+                    </button>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -158,14 +168,14 @@ const HeroSlider = () => {
       </div>
 
       {/* Navigation Arrows - Hidden on mobile, shown on md and larger */}
-      <button 
+      <button
         onClick={goToPrev}
         className="hidden md:block absolute left-4 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 text-white p-3 rounded-full hover:bg-opacity-70 transition z-10"
         aria-label="Previous slide"
       >
         <FaChevronLeft className="text-xl" />
       </button>
-      <button 
+      <button
         onClick={goToNext}
         className="hidden md:block absolute right-4 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 text-white p-3 rounded-full hover:bg-opacity-70 transition z-10"
         aria-label="Next slide"
@@ -179,7 +189,11 @@ const HeroSlider = () => {
           <button
             key={index}
             onClick={() => goToSlide(index)}
-            className={`w-3 h-3 rounded-full transition ${currentSlide === index ? 'bg-[#8B6B3D] w-6' : 'bg-white bg-opacity-50'}`}
+            className={`w-3 h-3 rounded-full transition ${
+              currentSlide === index
+                ? "bg-[#8B6B3D] w-6"
+                : "bg-white bg-opacity-50"
+            }`}
             aria-label={`Go to slide ${index + 1}`}
           />
         ))}

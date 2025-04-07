@@ -5,25 +5,45 @@ const { format } = require('date-fns');
 const Booking = require('../models/bookingModel');
 const logger = require('../utils/logger');
 
+// Settings cache
+let settingsCache = null;
+let lastSettingsFetch = 0;
+const SETTINGS_CACHE_TTL = 300000; // 5 minutes
+
+// Get settings with caching
+async function getSettings() {
+  const now = Date.now();
+  if (!settingsCache || (now - lastSettingsFetch) > SETTINGS_CACHE_TTL) {
+    settingsCache = await Booking.getSettings();
+    lastSettingsFetch = now;
+    logger.info('System settings refreshed from database');
+  }
+  return settingsCache;
+}
+
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_OUTGOING_SERVER,
-  port: process.env.EMAIL_SMTP_PORT,
+  host: process.env.BOOKING_EMAIL_OUTGOING_SERVER,
+  port: process.env.BOOKING_EMAIL_SMTP_PORT,
   secure: true,
   auth: {
-    user: process.env.EMAIL_USERNAME,
-    pass: process.env.EMAIL_PASSWORD
+    user: process.env.BOOKING_EMAIL_USERNAME,
+    pass: process.env.BOOKING_EMAIL_PASSWORD
   }
 });
 
 // Common email template with branding
-const emailTemplate = (content) => {
+const emailTemplate = (content, settings) => {
+  const companyName = settings?.company_name || 'Olosuash Tours';
+  const companyEmail = settings?.company_email || process.env.BOOKING_EMAIL_USERNAME;
+  const companyPhone = settings?.company_phone || '+254786027589';
+
   return `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Olosuash Tours</title>
+      <title>${companyName}</title>
       <style>
         body, html {
           margin: 0;
@@ -68,19 +88,45 @@ const emailTemplate = (content) => {
           margin: 20px 0;
           border: none;
         }
-        .link-section {
-          background-color: #f7f3ee;
-          padding: 15px;
-          margin: 20px 0;
+        .status-badge {
+          display: inline-block;
+          padding: 4px 8px;
           border-radius: 4px;
-          word-break: break-all;
+          font-weight: bold;
+          font-size: 12px;
         }
-        h2 {
-          color: #8B7355;
-          margin-top: 0;
+        .status-pending {
+          background-color: #FFF3CD;
+          color: #856404;
         }
-        a {
-          color: #8B7355;
+        .status-approved {
+          background-color: #D4EDDA;
+          color: #155724;
+        }
+        .status-cancelled {
+          background-color: #F8D7DA;
+          color: #721C24;
+        }
+        .detail-row {
+          display: flex;
+          margin-bottom: 10px;
+        }
+        .detail-label {
+          font-weight: bold;
+          width: 150px;
+        }
+        .detail-value {
+          flex: 1;
+        }
+        .itinerary-item {
+          margin-bottom: 15px;
+        }
+        .itinerary-day {
+          font-weight: bold;
+          margin-bottom: 5px;
+        }
+        .service-list {
+          padding-left: 20px;
         }
         .divider {
           border-top: 1px solid #e5e5e5;
@@ -91,14 +137,14 @@ const emailTemplate = (content) => {
     <body>
       <div class="container">
         <div class="header">
-          <img src="cid:logo" alt="Olosuash Tours Logo" class="logo">
+          <img src="cid:logo" alt="${companyName} Logo" class="logo">
         </div>
         <div class="content">
           ${content}
         </div>
         <div class="footer">
-          <p>&copy; ${new Date().getFullYear()} Olosuash Tours. All rights reserved.</p>
-          <p>If you have any questions, contact us at <a href="mailto:${process.env.EMAIL_USERNAME}">${process.env.EMAIL_USERNAME}</a></p>
+          <p>&copy; ${new Date().getFullYear()} ${companyName}. All rights reserved.</p>
+          <p>Contact us at <a href="mailto:${companyEmail}">${companyEmail}</a> or ${companyPhone}</p>
           <p>
             <a href="https://www.olosuashtours.com/privacy" style="margin: 0 10px;">Privacy Policy</a> | 
             <a href="https://www.olosuashtours.com/terms" style="margin: 0 10px;">Terms of Service</a>
@@ -112,12 +158,16 @@ const emailTemplate = (content) => {
 
 const sendEmail = async (options) => {
   try {
+    const settings = await getSettings();
+    const companyName = settings?.company_name || 'Olosuash Tours';
+    const companyEmail = settings?.company_email || process.env.BOOKING_EMAIL_USERNAME;
+
     // Get the logo path
     const logoPath = path.join(__dirname, '../public/olosuashi.png');
 
     // Define the email options with the logo as an attachment
     const mailOptions = {
-      from: `Olosuashi Tours <${process.env.EMAIL_USERNAME}>`,
+      from: `${companyName} <${companyEmail}>`,
       to: options.email,
       subject: options.subject,
       text: options.textContent,
@@ -142,24 +192,47 @@ const sendEmail = async (options) => {
   }
 };
 
-// Send booking confirmation email
+// Send booking confirmation email to user
 exports.sendBookingConfirmationEmail = async (booking) => {
   try {
-    const companyName = await Booking.getSetting('company_name') || 'Olosuash Tours';
+    const settings = await getSettings();
+    const companyName = settings?.company_name || 'Olosuash Tours';
     const formattedDate = format(new Date(booking.travel_date), 'MMMM do, yyyy');
-    const statusClass = `status-${booking.status}`;
     
     let whatsappSection = '';
     if (booking.payment_method === 'whatsapp' && booking.whatsapp_url) {
       whatsappSection = `
         <div style="text-align: center; margin: 25px 0;">
-          <a href="${booking.whatsapp_url}" class="button whatsapp-button">
+          <a href="${booking.whatsapp_url}" class="button">
             Complete Payment via WhatsApp
           </a>
         </div>
         <p style="text-align: center;">Or contact us directly at: ${booking.whatsapp_number}</p>
       `;
     }
+
+    // Payment instructions section
+    const paymentInstructions = `
+      <div class="payment-instructions">
+        <h3>📝 Payment Instructions</h3>
+        <ol>
+          <li>M-Pesa Paybill: ${settings?.mpesa_paybill || '123456'}</li>
+          <li>Account Number: ${booking.id}</li>
+          <li>Amount: USD ${booking.total_price.toLocaleString()}</li>
+          <li>Send payment confirmation to WhatsApp: ${settings?.company_phone || '+254786027589'}</li>
+          <li>Or pay cash at our office</li>
+        </ol>
+        
+        <div class="next-steps">
+          <h3>🔔 Next Steps</h3>
+          <ul>
+            <li>Complete payment within 24 hours</li>
+            <li>Send payment confirmation to our WhatsApp number</li>
+            <li>We'll verify and confirm your booking</li>
+          </ul>
+        </div>
+      </div>
+    `;
 
     const content = `
       <h2>Booking Confirmation</h2>
@@ -189,12 +262,12 @@ exports.sendBookingConfirmationEmail = async (booking) => {
         </div>
         <div class="detail-row">
           <div class="detail-label">Total Price:</div>
-          <div class="detail-value">$${booking.total_price}</div>
+          <div class="detail-value">USD ${booking.total_price.toLocaleString()}</div>
         </div>
         <div class="detail-row">
           <div class="detail-label">Status:</div>
           <div class="detail-value">
-            <span class="status-badge ${statusClass}">${booking.status}</span>
+            <span class="status-badge status-${booking.status}">${booking.status}</span>
           </div>
         </div>
         ${booking.special_requests ? `
@@ -205,36 +278,17 @@ exports.sendBookingConfirmationEmail = async (booking) => {
         ` : ''}
       </div>
       
+      ${paymentInstructions}
+      
       ${whatsappSection}
       
       <h3>Tour Itinerary</h3>
-      ${booking.tour_details.itinerary.map(item => `
+      ${booking.tour_details?.itinerary?.map(item => `
         <div class="itinerary-item">
           <div class="itinerary-day">Day ${item.day}: ${item.title}</div>
           <div>${item.description}</div>
         </div>
-      `).join('')}
-      
-      <div class="divider"></div>
-      
-      <div style="display: flex; margin: 20px 0;">
-        <div style="flex: 1; padding-right: 15px;">
-          <h3>Included Services</h3>
-          <ul class="service-list">
-            ${booking.tour_details.included_services.map(service => `
-              <li>${service.name}${service.details ? ` (${service.details})` : ''}</li>
-            `).join('')}
-          </ul>
-        </div>
-        <div style="flex: 1; padding-left: 15px;">
-          <h3>Excluded Services</h3>
-          <ul class="service-list">
-            ${booking.tour_details.excluded_services.map(service => `
-              <li>${service.name}${service.details ? ` (${service.details})` : ''}</li>
-            `).join('')}
-          </ul>
-        </div>
-      </div>
+      `).join('') || '<p>No itinerary details available.</p>'}
       
       <div class="divider"></div>
       
@@ -254,9 +308,21 @@ exports.sendBookingConfirmationEmail = async (booking) => {
       Travel Date: ${formattedDate}
       Duration: ${booking.tour_duration} days
       Travelers: ${booking.number_of_travelers} person(s)
-      Total Price: $${booking.total_price}
+      Total Price: USD ${booking.total_price.toLocaleString()}
       Status: ${booking.status}
       ${booking.special_requests ? `Special Requests: ${booking.special_requests}` : ''}
+      
+      📝 Payment Instructions:
+      1. M-Pesa Paybill: ${settings?.mpesa_paybill || '123456'}
+      2. Account Number: ${booking.id}
+      3. Amount: USD ${booking.total_price.toLocaleString()}
+      4. Send payment confirmation to WhatsApp: ${settings?.company_phone || '+254786027589'}
+      5. Or pay cash at our office
+      
+      🔔 Next Steps:
+      - Complete payment within 24 hours
+      - Send payment confirmation to our WhatsApp number
+      - We'll verify and confirm your booking
       
       ${booking.payment_method === 'whatsapp' && booking.whatsapp_url ? `
       Complete your payment via WhatsApp: ${booking.whatsapp_url}
@@ -264,20 +330,10 @@ exports.sendBookingConfirmationEmail = async (booking) => {
       ` : ''}
       
       Tour Itinerary:
-      ${booking.tour_details.itinerary.map(item => `
+      ${booking.tour_details?.itinerary?.map(item => `
       Day ${item.day}: ${item.title}
       ${item.description}
-      `).join('\n')}
-      
-      Included Services:
-      ${booking.tour_details.included_services.map(service => 
-        `- ${service.name}${service.details ? ` (${service.details})` : ''}`
-      ).join('\n')}
-      
-      Excluded Services:
-      ${booking.tour_details.excluded_services.map(service => 
-        `- ${service.name}${service.details ? ` (${service.details})` : ''}`
-      ).join('\n')}
+      `).join('\n') || 'No itinerary details available.'}
       
       We'll contact you soon to confirm your booking details. If you have any questions, please reply to this email.
       
@@ -285,13 +341,13 @@ exports.sendBookingConfirmationEmail = async (booking) => {
       The ${companyName} Team
     `;
     
-    const subject = await Booking.getSetting('booking_email_subject') || `Booking Confirmation: ${booking.tour_title}`;
+    const subject = settings?.booking_email_subject || `Booking Confirmation: ${booking.tour_title}`;
     
     return sendEmail({
       email: booking.user_email,
       subject,
       textContent,
-      html: emailTemplate(content)
+      html: emailTemplate(content, settings)
     });
   } catch (error) {
     logger.error(`Error sending booking confirmation email: ${error.message}`);
@@ -299,12 +355,136 @@ exports.sendBookingConfirmationEmail = async (booking) => {
   }
 };
 
-// Send booking status update email
+// Send admin notification email
+exports.sendAdminBookingNotificationEmail = async (booking) => {
+  try {
+    const settings = await getSettings();
+    const adminEmail = settings?.admin_email || process.env.ADMIN_EMAIL;
+    
+    if (!adminEmail) {
+      logger.warn('No admin email configured - skipping admin notification');
+      return;
+    }
+
+    const companyName = settings?.company_name || 'Olosuash Tours';
+    const formattedDate = format(new Date(booking.travel_date), 'MMMM do, yyyy');
+    const bookingUrl = `${process.env.BASE_URL}/admin/bookings?view=${booking.id}` || "http://localhost:5173/admin/bookings/";
+
+    const content = `
+      <h2>New Booking Notification</h2>
+      <p>Dear Admin,</p>
+      <p>A new booking has been created and requires your attention:</p>
+      
+      <div class="booking-details">
+        <div class="detail-row">
+          <div class="detail-label">Booking Reference:</div>
+          <div class="detail-value">#${booking.id}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Tour:</div>
+          <div class="detail-value">${booking.tour_title}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Travel Date:</div>
+          <div class="detail-value">${formattedDate}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Travelers:</div>
+          <div class="detail-value">${booking.number_of_travelers} person(s)</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Total Price:</div>
+          <div class="detail-value">USD ${booking.total_price.toLocaleString()}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Status:</div>
+          <div class="detail-value">
+            <span class="status-badge status-${booking.status}">${booking.status}</span>
+          </div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Customer:</div>
+          <div class="detail-value">${booking.user_name}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Customer Email:</div>
+          <div class="detail-value">${booking.user_email}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Customer Phone:</div>
+          <div class="detail-value">${booking.user_phone}</div>
+        </div>
+        ${booking.special_requests ? `
+        <div class="detail-row">
+          <div class="detail-label">Special Requests:</div>
+          <div class="detail-value">${booking.special_requests}</div>
+        </div>
+        ` : ''}
+        ${booking.payment_method === 'whatsapp' ? `
+        <div class="detail-row">
+          <div class="detail-label">WhatsApp Number:</div>
+          <div class="detail-value">${booking.whatsapp_number}</div>
+        </div>
+        ` : ''}
+      </div>
+      
+      <div style="text-align: center; margin: 25px 0;">
+        <a href="${bookingUrl}" class="button">
+          View Booking in Admin Panel
+        </a>
+      </div>
+      
+      <div class="divider"></div>
+      
+      <p>Please review and update the booking status as needed.</p>
+      <p>Best regards,<br>The ${companyName} Team</p>
+    `;
+    
+    const textContent = `
+      New Booking Notification - ${companyName}
+      
+      Dear Admin,
+      
+      A new booking has been created and requires your attention:
+      
+      Booking Reference: #${booking.id}
+      Tour: ${booking.tour_title}
+      Travel Date: ${formattedDate}
+      Travelers: ${booking.number_of_travelers} person(s)
+      Total Price: USD ${booking.total_price.toLocaleString()}
+      Status: ${booking.status}
+      Customer: ${booking.user_name}
+      Customer Email: ${booking.user_email}
+      Customer Phone: ${booking.user_phone}
+      ${booking.special_requests ? `Special Requests: ${booking.special_requests}` : ''}
+      ${booking.payment_method === 'whatsapp' ? `WhatsApp Number: ${booking.whatsapp_number}` : ''}
+      
+      View Booking: ${bookingUrl}
+      
+      Please review and update the booking status as needed.
+      
+      Best regards,
+      The ${companyName} Team
+    `;
+    
+    return sendEmail({
+      email: adminEmail,
+      subject: `New Booking: ${booking.tour_title} (Ref: #${booking.id})`,
+      textContent,
+      html: emailTemplate(content, settings)
+    });
+  } catch (error) {
+    logger.error(`Error sending admin notification email: ${error.message}`);
+    throw error;
+  }
+};
+
+// Send booking status update email to user
 exports.sendBookingStatusUpdateEmail = async (booking) => {
   try {
-    const companyName = await Booking.getSetting('company_name') || 'Olosuash Tours';
+    const settings = await getSettings();
+    const companyName = settings?.company_name || 'Olosuash Tours';
     const formattedDate = format(new Date(booking.travel_date), 'MMMM do, yyyy');
-    const statusClass = `status-${booking.status}`;
     
     let statusMessage = '';
     let actionSection = '';
@@ -312,7 +492,7 @@ exports.sendBookingStatusUpdateEmail = async (booking) => {
     
     switch (booking.status) {
       case 'approved':
-        subject = await Booking.getSetting('booking_approval_subject') || `Booking Approved: ${booking.tour_title}`;
+        subject = settings?.booking_approval_subject || `Booking Approved: ${booking.tour_title}`;
         statusMessage = `
           <p>Your booking for <strong>${booking.tour_title}</strong> has been approved!</p>
           <p>We're excited to have you join us on ${formattedDate}.</p>
@@ -326,7 +506,7 @@ exports.sendBookingStatusUpdateEmail = async (booking) => {
         `;
         break;
       case 'cancelled':
-        subject = await Booking.getSetting('booking_cancellation_subject') || `Booking Cancelled: ${booking.tour_title}`;
+        subject = settings?.booking_cancellation_subject || `Booking Cancelled: ${booking.tour_title}`;
         statusMessage = `
           <p>Your booking for <strong>${booking.tour_title}</strong> on ${formattedDate} has been cancelled.</p>
           ${booking.payment_status === 'refunded' ? `
@@ -370,7 +550,7 @@ exports.sendBookingStatusUpdateEmail = async (booking) => {
         <div class="detail-row">
           <div class="detail-label">Status:</div>
           <div class="detail-value">
-            <span class="status-badge ${statusClass}">${booking.status}</span>
+            <span class="status-badge status-${booking.status}">${booking.status}</span>
           </div>
         </div>
         ${booking.admin_notes ? `
@@ -418,7 +598,7 @@ exports.sendBookingStatusUpdateEmail = async (booking) => {
       email: booking.user_email,
       subject,
       textContent,
-      html: emailTemplate(content)
+      html: emailTemplate(content, settings)
     });
   } catch (error) {
     logger.error(`Error sending booking status email: ${error.message}`);

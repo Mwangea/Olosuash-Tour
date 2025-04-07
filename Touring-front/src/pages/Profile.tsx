@@ -59,7 +59,7 @@ const Profile = () => {
 
   if (!profile) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#F0E6D2]">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-[#F8F4EA] to-[#E9F5FF]">
         <div className="text-center">
           <h2 className="text-xl font-semibold text-[#8B4513]">Profile not found</h2>
           <p className="mt-2 text-gray-600">Please sign in to view your profile</p>

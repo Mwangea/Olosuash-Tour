@@ -1,121 +1,171 @@
-import { useState, useEffect } from 'react';
-
-import { FiCalendar, FiUsers, FiDollarSign, FiTrash2, FiInfo, FiClock, FiCheckCircle, FiXCircle } from 'react-icons/fi';
-import BookingDetailsModal from '../components/BookingDetailsModal';
-import CancelBookingModal from '../components/CancelBookingModal';
-import LoadingSpinner from '../components/LoadingSpinner';
-import api from '../api/axios';
-import { formatCurrency, formatDate } from '../utils/format';
-import { Booking } from '../api/bookingApi';
+import { useState, useEffect } from "react";
+import {
+  FaCalendarAlt,
+  FaUsers,
+  FaMoneyBillWave,
+  FaInfoCircle,
+  FaTrash,
+  FaCheckCircle,
+  FaTimesCircle,
+  FaClock,
+  FaFilter,
+  FaSync,
+} from "react-icons/fa";
+import { Link } from "react-router-dom";
+import { BookingApi } from "../api/bookingApi";
+import { formatCurrency, formatDate } from "../utils/format";
+import { Booking } from "../api/bookingApi";
+import BookingDetailsModal from "../components/BookingDetailsModal";
+import { useBooking } from "../context/BookingContext";
+import DeleteConfirmationBookingModal from "../components/DeleteConfirmationBookingModal";
 
 const Bookings = () => {
-  
+  const { bookingSuccess } = useBooking();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [bookingToDelete, setBookingToDelete] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    const fetchBookings = async () => {
-      try {
-        setLoading(true);
-        const response = await api.get('/bookings/my-bookings');
-        setBookings(response.data.data.bookings);
-      } catch (err) {
-        setError('Failed to fetch bookings. Please try again later.');
-        console.error('Error fetching bookings:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchBookings();
-  }, []);
+  }, [bookingSuccess]);
+
+  const fetchBookings = async () => {
+    try {
+      setLoading(true);
+      const data = await BookingApi.getMyBookings();
+      setBookings(data || []);
+    } catch (err) {
+      setError("Failed to fetch bookings. Please try again later.");
+      console.error("Error fetching bookings:", err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchBookings();
+  };
 
   const handleViewDetails = (booking: Booking) => {
     setSelectedBooking(booking);
     setShowDetailsModal(true);
   };
 
-  const handleCancelBooking = (booking: Booking) => {
-    setSelectedBooking(booking);
-    setShowCancelModal(true);
+  const handleCancelBooking = (id: string) => {
+    setBookingToDelete(id);
+    setShowDeleteModal(true);
   };
 
   const confirmCancelBooking = async () => {
-    if (!selectedBooking) return;
+    if (!bookingToDelete) return;
 
     try {
       setCancelling(true);
-      await api.delete(`/bookings/${selectedBooking.id}`);
-      
-      // Update the bookings list
-      setBookings(bookings.map(booking => 
-        booking.id === selectedBooking.id 
-          ? { ...booking, status: 'cancelled' } 
-          : booking
-      ));
-      
-      setShowCancelModal(false);
+      await BookingApi.cancelBooking(bookingToDelete);
+      setBookings(
+        bookings.map((booking) =>
+          booking.id === bookingToDelete
+            ? { ...booking, status: "cancelled" }
+            : booking
+        )
+      );
     } catch (err) {
-      setError('Failed to cancel booking. Please try again.');
-      console.error('Error cancelling booking:', err);
+      setError("Failed to cancel booking. Please try again.");
+      console.error("Error cancelling booking:", err);
     } finally {
       setCancelling(false);
+      setShowDeleteModal(false);
+      setBookingToDelete(null);
     }
   };
 
   const getStatusBadge = (status: string) => {
+    const baseClasses =
+      "inline-flex items-center px-2 py-1 rounded-full text-xs sm:text-sm font-medium";
+
     switch (status) {
-      case 'pending':
+      case "pending":
         return (
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
-            <FiClock className="mr-1" /> Pending
+          <span className={`${baseClasses} bg-yellow-100 text-yellow-800`}>
+            <FaClock className="mr-1" /> Pending
           </span>
         );
-      case 'approved':
+      case "approved":
         return (
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-            <FiCheckCircle className="mr-1" /> Approved
+          <span className={`${baseClasses} bg-green-100 text-green-800`}>
+            <FaCheckCircle className="mr-1" /> Approved
           </span>
         );
-      case 'cancelled':
+      case "cancelled":
         return (
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
-            <FiXCircle className="mr-1" /> Cancelled
+          <span className={`${baseClasses} bg-red-100 text-red-800`}>
+            <FaTimesCircle className="mr-1" /> Cancelled
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+          <span className={`${baseClasses} bg-gray-100 text-gray-800`}>
             Unknown
           </span>
         );
     }
   };
 
+  const filteredBookings = bookings.filter(
+    (booking) => statusFilter === "all" || booking.status === statusFilter
+  );
+
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <LoadingSpinner />
+      <div className="min-h-screen bg-gradient-to-b from-[#F8F4EA] to-[#E9F5FF] py-8 px-4">
+        <div className="container mx-auto max-w-6xl">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#2A2A2A] mb-6">
+            My Bookings
+          </h1>
+          <div className="space-y-4">
+            {[1, 2, 3].map((item) => (
+              <div
+                key={item}
+                className="bg-white rounded-lg shadow p-4 sm:p-6 animate-pulse"
+              >
+                <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
+                <div className="space-y-2">
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
-        <div className="flex">
-          <div className="flex-shrink-0">
-            <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-            </svg>
-          </div>
-          <div className="ml-3">
-            <p className="text-sm text-red-700">{error}</p>
+      <div className="min-h-screen bg-gradient-to-b from-[#F8F4EA] to-[#E9F5FF] py-8 px-4">
+        <div className="container mx-auto max-w-6xl">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#2A2A2A] mb-6">
+            My Bookings
+          </h1>
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6 text-center">
+            <p className="text-red-500">{error}</p>
+            <button
+              onClick={handleRefresh}
+              className="mt-4 px-4 py-2 bg-[#8B6B3D] text-white rounded-lg hover:bg-[#6B4F2D] transition"
+            >
+              Try Again
+            </button>
           </div>
         </div>
       </div>
@@ -123,66 +173,116 @@ const Bookings = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-[#8B4513]">Your Bookings</h2>
-      
-      {bookings.length === 0 ? (
-        <div className="bg-[#F5F0E6] p-6 rounded-lg text-center">
-          <p className="text-gray-600">You have no bookings yet.</p>
-          <a 
-            href="/tours" 
-            className="mt-4 inline-block px-4 py-2 bg-[#8B4513] text-white rounded-md hover:bg-[#A0522D] transition-colors"
-          >
-            Browse Tours
-          </a>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {bookings.map((booking) => (
-            <div key={booking.id} className="bg-[#F5F0E6] p-6 rounded-lg border border-[#E8D9C5]">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                <div className="mb-4 md:mb-0">
-                  <h3 className="text-lg font-semibold text-[#8B4513]">{booking.tour_title}</h3>
-                  <div className="flex items-center mt-2 text-gray-600">
-                    <FiCalendar className="mr-2" />
-                    <span>{formatDate(booking.travel_date)}</span>
-                  </div>
-                  <div className="flex items-center mt-1 text-gray-600">
-                    <FiUsers className="mr-2" />
-                    <span>{booking.number_of_travelers} traveler{booking.number_of_travelers !== 1 ? 's' : ''}</span>
-                  </div>
-                  <div className="flex items-center mt-1 text-gray-600">
-                    <FiDollarSign className="mr-2" />
-                    <span>{formatCurrency(booking.total_price)}</span>
-                  </div>
-                </div>
-                
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                  <div className="mb-2 sm:mb-0">
-                    {getStatusBadge(booking.status)}
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleViewDetails(booking)}
-                      className="flex items-center px-3 py-2 bg-[#8B4513] text-white rounded-md hover:bg-[#A0522D] transition-colors"
-                    >
-                      <FiInfo className="mr-1" /> Details
-                    </button>
-                    {booking.status !== 'cancelled' && (
-                      <button
-                        onClick={() => handleCancelBooking(booking)}
-                        className="flex items-center px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-                      >
-                        <FiTrash2 className="mr-1" /> Cancel
-                      </button>
-                    )}
-                  </div>
-                </div>
+    <div className="min-h-screen bg-gradient-to-b from-[#F8F4EA] to-[#E9F5FF] py-8 px-4">
+      <div className="container mx-auto max-w-6xl">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#2A2A2A]">My Bookings</h1>
+          <div className="flex flex-col xs:flex-row items-start xs:items-center gap-3 w-full sm:w-auto">
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="flex items-center px-3 sm:px-4 py-2 bg-[#8B6B3D] text-white rounded-lg hover:bg-[#6B4F2D] transition disabled:opacity-50 text-sm sm:text-base w-full xs:w-auto justify-center"
+            >
+              <FaSync className={`mr-2 ${refreshing ? "animate-spin" : ""}`} />
+              {refreshing ? "Refreshing..." : "Refresh"}
+            </button>
+            <div className="relative w-full xs:w-auto">
+              <div className="flex items-center px-3 sm:px-4 py-2 border border-[#8B6B3D] rounded-lg cursor-pointer w-full">
+                <FaFilter className="text-[#8B6B3D] mr-2" />
+                <select
+                  title="status"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="appearance-none bg-transparent pr-8 focus:outline-none w-full text-sm sm:text-base"
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
               </div>
             </div>
-          ))}
+          </div>
         </div>
-      )}
+
+        {!bookings || bookings.length === 0 ? (
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6 text-center">
+            <p className="text-gray-600 mb-4">
+              You don't have any bookings yet.
+            </p>
+            <Link
+              to="/tours"
+              className="inline-block px-4 sm:px-6 py-2 bg-[#8B6B3D] text-white rounded-lg hover:bg-[#6B4F2D] transition text-sm sm:text-base"
+            >
+              Browse Tours
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-4 sm:space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto pb-4">
+            {filteredBookings.length === 0 ? (
+              <div className="bg-white rounded-lg shadow p-4 sm:p-6 text-center">
+                <p className="text-gray-600">
+                  No bookings match the selected filter.
+                </p>
+              </div>
+            ) : (
+              filteredBookings.map((booking) => (
+                <div
+                  key={booking.id}
+                  className="bg-white rounded-lg shadow overflow-hidden"
+                >
+                  <div className="p-4 sm:p-6">
+                    <div className="flex flex-col xs:flex-row justify-between items-start gap-2 mb-4">
+                      <h2 className="text-lg sm:text-xl font-bold text-gray-800 pr-2">
+                        {booking.tour_title}
+                      </h2>
+                      {getStatusBadge(booking.status)}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4 sm:mb-6">
+                      <div className="flex items-center text-sm sm:text-base">
+                        <FaCalendarAlt className="text-[#8B6B3D] mr-2 flex-shrink-0" />
+                        <span className="truncate">{formatDate(booking.travel_date)}</span>
+                      </div>
+                      <div className="flex items-center text-sm sm:text-base">
+                        <FaUsers className="text-[#8B6B3D] mr-2 flex-shrink-0" />
+                        <span>
+                          {booking.number_of_travelers} traveler
+                          {booking.number_of_travelers !== 1 ? "s" : ""}
+                        </span>
+                      </div>
+                      <div className="flex items-center text-sm sm:text-base">
+                        <FaMoneyBillWave className="text-[#8B6B3D] mr-2 flex-shrink-0" />
+                        <span>{formatCurrency(booking.total_price)}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 sm:gap-3">
+                      <button
+                        onClick={() => handleViewDetails(booking)}
+                        className="flex items-center px-3 sm:px-4 py-1.5 sm:py-2 border border-[#8B6B3D] text-[#8B6B3D] rounded-lg hover:bg-gray-50 transition text-xs sm:text-sm"
+                      >
+                        <FaInfoCircle className="mr-1 sm:mr-2" />
+                        View Details
+                      </button>
+                      {booking.status !== "cancelled" && (
+                        <button
+                          onClick={() => handleCancelBooking(booking.id)}
+                          disabled={cancelling}
+                          className="flex items-center px-3 sm:px-4 py-1.5 sm:py-2 border border-red-500 text-red-500 rounded-lg hover:bg-red-50 transition disabled:opacity-50 text-xs sm:text-sm"
+                        >
+                          <FaTrash className="mr-1 sm:mr-2" />
+                          {cancelling ? "Cancelling..." : "Cancel Booking"}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Booking Details Modal */}
       {selectedBooking && (
@@ -193,16 +293,20 @@ const Bookings = () => {
         />
       )}
 
-      {/* Cancel Booking Modal */}
-      {selectedBooking && (
-        <CancelBookingModal
-          booking={selectedBooking}
-          isOpen={showCancelModal}
-          onClose={() => setShowCancelModal(false)}
-          onConfirm={confirmCancelBooking}
-          isLoading={cancelling}
-        />
-      )}
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationBookingModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setBookingToDelete(null);
+        }}
+        onConfirm={confirmCancelBooking}
+        title="Cancel Booking"
+        message="Are you sure you want to cancel this booking? This action cannot be undone."
+        confirmText={cancelling ? "Cancelling..." : "Yes, Cancel"}
+        cancelText="No, Keep It"
+        isProcessing={cancelling}
+      />
     </div>
   );
 };

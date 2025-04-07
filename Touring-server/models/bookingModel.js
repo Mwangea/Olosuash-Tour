@@ -34,6 +34,7 @@ class BookingModel {
           payment_status: bookingData.payment_method === 'online' ? 'pending' : 'completed',
           special_requests: bookingData.special_requests || null,
           whatsapp_number: bookingData.payment_method === 'whatsapp' ? bookingData.whatsapp_number : null,
+          whatsapp_url: null, // Will be updated after creation
           status: 'pending'
         }
       );
@@ -93,50 +94,80 @@ class BookingModel {
       
       const booking = bookings[0];
       
-      // Get itinerary
-      const [itinerary] = await pool.query(
-        'SELECT day, title, description FROM tour_itineraries WHERE tour_id = ? ORDER BY day',
-        [booking.tour_id]
-      );
+      // Safely get itinerary
+      let itinerary = [];
+      try {
+        const [itineraryData] = await pool.query(
+          'SELECT day, title, description FROM tour_itineraries WHERE tour_id = ? ORDER BY day',
+          [booking.tour_id]
+        );
+        itinerary = itineraryData || [];
+      } catch (err) {
+        logger.error(`Error fetching itinerary: ${err.message}`);
+      }
       
-      // Get included services
-      const [includedServices] = await pool.query(
-        `SELECT s.name, tis.details 
-         FROM tour_included_services tis
-         JOIN services s ON tis.service_id = s.id
-         WHERE tis.tour_id = ?`,
-        [booking.tour_id]
-      );
+      // Safely get included services
+      let includedServices = [];
+      try {
+        const [includedData] = await pool.query(
+          `SELECT s.name, tis.details 
+           FROM tour_included_services tis
+           JOIN services s ON tis.service_id = s.id
+           WHERE tis.tour_id = ?`,
+          [booking.tour_id]
+        );
+        includedServices = includedData || [];
+      } catch (err) {
+        logger.error(`Error fetching included services: ${err.message}`);
+      }
       
-      // Get excluded services
-      const [excludedServices] = await pool.query(
-        `SELECT s.name, tes.details 
-         FROM tour_excluded_services tes
-         JOIN services s ON tes.service_id = s.id
-         WHERE tes.tour_id = ?`,
-        [booking.tour_id]
-      );
+      // Safely get excluded services
+      let excludedServices = [];
+      try {
+        const [excludedData] = await pool.query(
+          `SELECT s.name, tes.details 
+           FROM tour_excluded_services tes
+           JOIN services s ON tes.service_id = s.id
+           WHERE tes.tour_id = ?`,
+          [booking.tour_id]
+        );
+        excludedServices = excludedData || [];
+      } catch (err) {
+        logger.error(`Error fetching excluded services: ${err.message}`);
+      }
       
-      // Get status history - Updated to use username instead of name
-      const [statusHistory] = await pool.query(
-        `SELECT status, notes, created_at, 
-                CONCAT(u.username, ' (', u.role, ')') AS changed_by
-         FROM booking_status_log l
-         LEFT JOIN users u ON l.changed_by = u.id
-         WHERE booking_id = ?
-         ORDER BY created_at DESC`,
-        [id]
-      );
+      // Get status history
+      let statusHistory = [];
+      try {
+        const [historyData] = await pool.query(
+          `SELECT status, notes, created_at, 
+                  CONCAT(u.username, ' (', u.role, ')') AS changed_by
+           FROM booking_status_log l
+           LEFT JOIN users u ON l.changed_by = u.id
+           WHERE booking_id = ?
+           ORDER BY created_at DESC`,
+          [id]
+        );
+        statusHistory = historyData || [];
+      } catch (err) {
+        logger.error(`Error fetching status history: ${err.message}`);
+      }
       
       // Get payment history
-      const [paymentHistory] = await pool.query(
-        `SELECT amount, payment_method, status, 
-                transaction_reference, notes, created_at
-         FROM booking_payments
-         WHERE booking_id = ?
-         ORDER BY created_at DESC`,
-        [id]
-      );
+      let paymentHistory = [];
+      try {
+        const [paymentData] = await pool.query(
+          `SELECT amount, payment_method, status, 
+                  transaction_reference, notes, created_at
+           FROM booking_payments
+           WHERE booking_id = ?
+           ORDER BY created_at DESC`,
+          [id]
+        );
+        paymentHistory = paymentData || [];
+      } catch (err) {
+        logger.error(`Error fetching payment history: ${err.message}`);
+      }
       
       return {
         ...booking,
@@ -160,13 +191,14 @@ class BookingModel {
     const offset = (page - 1) * limit;
 
     let query = `
-      SELECT b.*, t.title AS tour_title, t.duration AS tour_duration,
-             u.username AS user_name, u.email AS user_email
-      FROM bookings b
-      JOIN tours t ON b.tour_id = t.id
-      JOIN users u ON b.user_id = u.id
-      WHERE 1=1
-    `;
+  SELECT b.*, t.title AS tour_title, t.duration AS tour_duration,
+         u.username AS user_name, u.email AS user_email,
+         b.created_at AS booking_created_at, b.updated_at AS booking_updated_at
+  FROM bookings b
+  JOIN tours t ON b.tour_id = t.id
+  JOIN users u ON b.user_id = u.id
+  WHERE 1=1
+`;
     const params = [];
 
     if (status) {
@@ -202,12 +234,12 @@ class BookingModel {
 
     // Get total count for pagination
     let countQuery = `
-      SELECT COUNT(*) AS total 
-      FROM bookings b
-      JOIN tours t ON b.tour_id = t.id
-      JOIN users u ON b.user_id = u.id
-      WHERE 1=1
-    `;
+  SELECT COUNT(*) AS total 
+  FROM bookings b
+  JOIN tours t ON b.tour_id = t.id
+  JOIN users u ON b.user_id = u.id
+  WHERE 1=1
+`;
     const countParams = [];
 
     if (status) {
@@ -396,7 +428,25 @@ class BookingModel {
     }
   }
 
-  // Get system setting
+  // Get all system settings
+  static async getSettings() {
+    try {
+      const [settings] = await pool.query(
+        'SELECT setting_key, setting_value FROM system_settings'
+      );
+      
+      // Convert array of settings to an object for easier access
+      return settings.reduce((acc, { setting_key, setting_value }) => {
+        acc[setting_key] = setting_value;
+        return acc;
+      }, {});
+    } catch (error) {
+      logger.error(`Error getting system settings: ${error.message}`);
+      throw error;
+    }
+  }
+
+  // Get single system setting
   static async getSetting(key) {
     try {
       const [settings] = await pool.query(
@@ -406,6 +456,20 @@ class BookingModel {
       return settings[0]?.setting_value || null;
     } catch (error) {
       logger.error(`Error getting system setting: ${error.message}`);
+      throw error;
+    }
+  }
+
+  // Update whatsapp_url for a booking
+  static async updateWhatsappUrl(bookingId, whatsappUrl) {
+    try {
+      const [result] = await pool.query(
+        'UPDATE bookings SET whatsapp_url = ? WHERE id = ?',
+        [whatsappUrl, bookingId]
+      );
+      return result.affectedRows > 0;
+    } catch (error) {
+      logger.error(`Error updating whatsapp_url: ${error.message}`);
       throw error;
     }
   }
