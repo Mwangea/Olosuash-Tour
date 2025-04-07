@@ -57,12 +57,13 @@ router.get('/regions', tourController.getRegions);
 router.get('/vehicle-types', tourController.getVehicleTypes);
 router.get('/service-categories', tourController.getServiceCategories);
 router.get('/slug/:slug', tourController.getTourBySlug);
+router.get('/:id/wishlist/check', tourController.checkWishlist);
+
 // Protected routes (authentication required)
 router.use(isAuthenticated);
 
 // Wishlist routes
 router.get('/wishlist', tourController.getWishlist);
-router.get('/:id/wishlist/check', tourController.checkWishlist);
 router.post('/:id/wishlist', tourController.addToWishlist);
 router.delete('/:id/wishlist', tourController.removeFromWishlist);
 

@@ -1,4 +1,4 @@
-// components/WishlistIcon.tsx
+
 import { useState, useEffect } from 'react';
 import { FiHeart } from 'react-icons/fi';
 import api from '../api/axios';

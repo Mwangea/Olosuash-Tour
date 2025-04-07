@@ -35,6 +35,7 @@ import TourForm from './admin/pages/TourForm';
 import Tour from './pages/Tour';
 import { BookingProvider } from './context/BookingContext';
 import { BookingSuccess } from './pages/BookingSuccess';
+import TourSlugPage from './TourPages/TourSlugPage';
 
 // Create a User Layout component with Header and Footer
 const UserLayout = ({ children }: { children: React.ReactNode }) => {
@@ -120,6 +121,7 @@ function App() {
             <Route path='/faq' element={<UserLayout><FAQPage /></UserLayout>} />
             <Route path='/tours' element={<UserLayout><Tour /></UserLayout>} />
             <Route path="/booking-success" element={<UserLayout><BookingSuccess /></UserLayout>} />
+            <Route path="/tours/:slug" element={<UserLayout><TourSlugPage /></UserLayout>} />
             
          
             <Route path="/profile" element={<UserLayout><Profile /></UserLayout>}>

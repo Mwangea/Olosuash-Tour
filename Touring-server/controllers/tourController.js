@@ -503,34 +503,41 @@ const getWishlist = async (req, res, next) => {
 };
 
 /**
- * @desc    Check if tour is in user's wishlist
+ * @desc    Check if tour is in user's wishlist (now public)
  * @route   GET /api/tours/:id/wishlist/check
- * @access  Authenticated
+ * @access  Public
  */
 const checkWishlist = async (req, res, next) => {
   try {
     const { id: tourId } = req.params;
-    const userId = req.user.id;
+    const userId = req.user?.id; // Optional user ID
     
-    const isInWishlist = await Tour.isInWishlist(userId, tourId);
+    // Check if tour exists
+    const tour = await Tour.findById(tourId);
+    if (!tour) {
+      return next(new AppError('Tour not found', 404));
+    }
+    
+    // If user is logged in, check their wishlist status
+    const isInWishlist = userId ? await Tour.isInWishlist(userId, tourId) : false;
     
     res.status(200).json({
       status: 'success',
       data: {
-        isInWishlist
+        isInWishlist,
+        isAuthenticated: !!userId // Indicate if user is authenticated
       }
     });
   } catch (error) {
     next(error);
   }
 };
-
 /**
  * @desc    Get tour statistics
  * @route   GET /api/tours/stats
  * @access  Public
  */
-getTourStats = async (req, res, next) => {
+const getTourStats = async (req, res, next) => {
   try {
     const stats = await Tour.getStats();
     
