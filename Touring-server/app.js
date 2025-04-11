@@ -27,7 +27,8 @@ const corsOptions = {
     'http://localhost:3000',   // React development server
     'http://localhost:5173',   // Vite development server
     'http://localhost:8000',   // Backend server
-    process.env.FRONTEND_URL   // Production frontend URL (add this)
+    'https://olosuashi.com',  // Add this
+    'https://www.olosuashi.com'   // Production frontend URL (add this)
   ],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: [
@@ -78,6 +79,10 @@ const authLimiter = rateLimit({
 app.use('/api', apiLimiter);
 app.use('/api/auth/login', authLimiter); // Stricter limits on login attempts
 app.use('/api/auth/register', authLimiter); // Stricter limits on registration
+
+app.get('/sitemap.xml', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/sitemap.xml'));
+});
 
 // Body parser for JSON and urlencoded
 app.use(express.json({ limit: '10kb' }));

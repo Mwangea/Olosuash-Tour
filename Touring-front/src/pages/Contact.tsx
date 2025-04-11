@@ -79,6 +79,16 @@ const ContactPage = () => {
     }
   };
 
+  const isFormValid = (): boolean => {
+    return (
+      formData.name.trim() !== '' &&
+      formData.email.trim() !== '' &&
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) &&
+      formData.message.trim() !== '' &&
+      (formData.phone === '' || /^\+?[1-9]\d{1,14}$/.test(formData.phone))
+    );
+  };
+
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
     if (!formData.name.trim()) newErrors.name = 'Name is required';
@@ -88,17 +98,42 @@ const ContactPage = () => {
       newErrors.email = 'Please enter a valid email';
     }
     if (formData.phone && !/^\+?[1-9]\d{1,14}$/.test(formData.phone)) {
-        newErrors.phone = 'Please enter a valid phone number';
-      }
-      
+      newErrors.phone = 'Please enter a valid phone number';
+    }
     if (!formData.message.trim()) newErrors.message = 'Message is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleWhatsAppClick = () => {
-    const message = `Hello Olosuashi team,\n\nI'd like to inquire about:${formData.subject || 'Not provided'}\nName: ${formData.name || 'Not provided'}\nEmail: ${formData.email || 'Not provided'}\nPhone: ${formData.phone || 'Not provided'}\nMessage: ${formData.message || 'Not provided'}`;
-    window.open(`https://wa.me/0755854208?text=${encodeURIComponent(message)}`, '_blank');
+    // First validate the form
+    if (!validateForm()) {
+      const firstError = Object.keys(errors)[0];
+      if (firstError) {
+        document.getElementById(firstError)?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+      }
+      return;
+    }
+
+  // Construct the message with proper line breaks
+  const message = `Hello Olosuashi team,
+
+  I'd like to inquire about: ${formData.subject || 'Not provided'}
+  Name: ${formData.name || 'Not provided'}
+  Email: ${formData.email || 'Not provided'}
+  Phone: ${formData.phone || 'Not provided'}
+  
+  Message:
+  ${formData.message || 'Not provided'}`;
+  
+    // Encode the message for URL
+    const encodedMessage = encodeURIComponent(message);
+    
+    // Open WhatsApp with the pre-filled message
+    window.open(`https://wa.me/254708414577?text=${encodedMessage}`, '_blank');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -118,40 +153,36 @@ const ContactPage = () => {
     setSubmitStatus(null);
 
     setTimeout(() => {
-        const emailSubject = `[Olosuashi Contact] ${formData.subject}`;
-      
-        const emailBody = `
-          Name: ${formData.name}
-          Email: ${formData.email}
-          Phone: ${formData.phone}
-      
-          Message:
-          ${formData.message}
-        `.trim(); // Removes extra spaces at the start or end
-      
-        // Open default email client
-        window.location.href = `mailto:admin@olosuashi.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
-      
-        // Show user feedback
-        setSubmitStatus({ 
-          success: true, 
-          message: 'Your message has been prepared in your email client. Please send it to complete the process.' 
+      const emailSubject = `[Olosuashi Contact] ${formData.subject}`;
+    
+      const emailBody = `
+        Name: ${formData.name}
+        Email: ${formData.email}
+        Phone: ${formData.phone}
+    
+        Message:
+        ${formData.message}
+      `.trim();
+    
+      window.location.href = `mailto:admin@olosuashi.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+    
+      setSubmitStatus({ 
+        success: true, 
+        message: 'Your message has been prepared in your email client. Please send it to complete the process.' 
+      });
+    
+      setIsSubmitting(false);
+    
+      setTimeout(() => {
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          subject: 'General Inquiry',
+          message: ''
         });
-      
-        setIsSubmitting(false);
-      
-        // Reset form after 3 seconds
-        setTimeout(() => {
-          setFormData({
-            name: '',
-            email: '',
-            phone: '',
-            subject: 'General Inquiry',
-            message: ''
-          });
-        }, 3000);
-      }, 1500);
-      
+      }, 3000);
+    }, 1500);
   };
 
   const toggleFaq = (index: number) => {
@@ -266,7 +297,7 @@ const ContactPage = () => {
                       value={formData.phone}
                       onChange={handleChange}
                       className={`w-full px-3 py-2 border ${errors.phone ? 'border-red-400' : 'border-gray-300'} rounded focus:outline-none focus:ring-1 focus:ring-[#8B6B3D] text-sm`}
-                      placeholder="+1 (234) 567-8900"
+                      placeholder="+254708414577"
                     />
                     {errors.phone && <p className="text-red-500 text-xs mt-1 flex items-center">
                       <FaExclamationCircle className="mr-1" /> {errors.phone}
@@ -331,14 +362,24 @@ const ContactPage = () => {
 
               <div className="mt-4 pt-3 border-t border-gray-100">
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <button 
-                    onClick={handleWhatsAppClick}
-                    className="bg-[#25D366] hover:bg-[#128C7E] text-white py-2 px-3 rounded flex items-center justify-center text-xs"
-                  >
-                    <FaWhatsapp className="mr-1.5" /> WhatsApp
-                  </button>
+                  <div className="relative group">
+                    <button 
+                      onClick={handleWhatsAppClick}
+                      disabled={!isFormValid()}
+                      className={`w-full bg-[#25D366] hover:bg-[#128C7E] text-white py-2 px-3 rounded flex items-center justify-center text-xs ${
+                        !isFormValid() ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
+                    >
+                      <FaWhatsapp className="mr-1.5" /> WhatsApp
+                    </button>
+                    {!isFormValid() && (
+                      <div className="absolute z-10 hidden group-hover:block bottom-full mb-2 px-2 py-1 text-xs text-white bg-gray-800 rounded whitespace-nowrap">
+                        Please fill all required fields first
+                      </div>
+                    )}
+                  </div>
                   <a 
-                    href="tel:+1234567890"
+                    href="tel:0708414577"
                     className="bg-gray-800 hover:bg-black text-white py-2 px-3 rounded flex items-center justify-center text-xs"
                   >
                     <FaPhone className="mr-1.5" /> Call Us
@@ -360,11 +401,11 @@ const ContactPage = () => {
                     <h3 className="font-bold text-gray-800 mb-1">Ready to Book Your Experience?</h3>
                     <p className="text-gray-600 text-sm mb-3">Secure your spot now for an unforgettable adventure with our easy online booking system.</p>
                     <Link
-        to="/booking"
-        className="inline-block bg-[#8B6B3D] hover:bg-[#6B4F2D] text-white text-sm font-medium py-2 px-4 rounded transition"
-      >
-        Book Now
-      </Link>
+                      to="/booking"
+                      className="inline-block bg-[#8B6B3D] hover:bg-[#6B4F2D] text-white text-sm font-medium py-2 px-4 rounded transition"
+                    >
+                      Book Now
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -380,11 +421,11 @@ const ContactPage = () => {
                     <h3 className="font-bold text-gray-800 mb-1">Explore Our Tour Packages</h3>
                     <p className="text-gray-600 text-sm mb-3">Discover our curated selection of premium tours designed to give you the best experience.</p>
                     <Link
-        to="/booking"
-        className="inline-block bg-[#8B6B3D] hover:bg-[#6B4F2D] text-white text-sm font-medium py-2 px-4 rounded transition"
-      >
-        Book Now
-      </Link>
+                      to="/booking"
+                      className="inline-block bg-[#8B6B3D] hover:bg-[#6B4F2D] text-white text-sm font-medium py-2 px-4 rounded transition"
+                    >
+                      Book Now
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -427,7 +468,7 @@ const ContactPage = () => {
                   <div>
                     <h3 className="font-semibold text-gray-800 text-sm">Phone Numbers</h3>
                     <p className="text-gray-600 text-sm">
-                      <a href="tel:+1234567890" className="hover:text-[#8B6B3D] transition">+254 755 854 208</a> (Main)
+                      <a href="tel:0755854208" className="hover:text-[#8B6B3D] transition">+254 755 854 208</a> (Main)
                     </p>
                     <p className="text-gray-600 text-sm">
                       <a href="tel:0708414577" className="hover:text-[#8B6B3D] transition">+254 708 414 577</a> (24/7 Support)
@@ -566,7 +607,7 @@ const ContactPage = () => {
 
           <div className="text-center mt-6">
             <Link 
-             to="/faq"
+              to="/faq"
               className="inline-block text-[#8B6B3D] hover:text-[#6B4F2D] font-medium transition"
             >
               View all FAQs →

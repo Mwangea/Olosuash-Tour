@@ -87,12 +87,35 @@ const TourSlugPage = () => {
   } | null>(null);
   const [showAllImages, setShowAllImages] = useState(false);
 
+  // Function to ensure image URLs are absolute
+  const getFullImageUrl = (path: string) => {
+    // If the path is already a full URL, return it
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    // Otherwise, construct the full URL using your API domain
+    return `https://api.olosuashi.com${path.startsWith('/') ? path : `/${path}`}`;
+  };
+
   useEffect(() => {
     const fetchTour = async () => {
       try {
         setLoading(true);
         const response = await api.get(`/tours/slug/${slug}`);
-        setTour(response.data.data.tour);
+        
+        // Process the tour data to ensure full image URLs
+        const processedTour = {
+          ...response.data.data.tour,
+          cover_image: response.data.data.tour.cover_image 
+            ? getFullImageUrl(response.data.data.tour.cover_image)
+            : undefined,
+          images: response.data.data.tour.images?.map((image: { image_path: string }) => ({
+            ...image,
+            image_path: getFullImageUrl(image.image_path)
+          })) || []
+        };
+
+        setTour(processedTour);
       } catch (err) {
         setError("Failed to load tour details");
         console.error("Error fetching tour:", err);

@@ -249,7 +249,7 @@ const SustainabilityPage = () => {
             <div className="flex flex-col md:flex-row items-center gap-8">
               <div className="md:w-1/2">
                 <img 
-                  src="https://images.unsplash.com/photo-1526779259212-939e64788e3c?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" 
+                  src="/sustainability-1.webp" 
                   alt="Sustainable safari" 
                   className="rounded-xl shadow-md w-full h-auto"
                 />
@@ -377,15 +377,11 @@ const SustainabilityPage = () => {
                 </div>
                 <div className="grid gap-4">
                   <img 
-                    src="https://images.unsplash.com/photo-1526779259212-939e64788e3c?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" 
+                    src="/planting.jpg" 
                     alt="Sustainable lodge" 
                     className="w-full h-auto rounded-lg shadow-md"
                   />
-                  <img 
-                    src="https://images.unsplash.com/photo-1509316785289-025f5b846b35?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" 
-                    alt="Solar panels" 
-                    className="w-full h-auto rounded-lg shadow-md"
-                  />
+                  
                 </div>
               </div>
             )}
@@ -445,12 +441,7 @@ const SustainabilityPage = () => {
                 </div>
                 <div className="grid gap-4">
                   <img 
-                    src="https://images.unsplash.com/photo-1600188769045-bc60256a1c4f?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" 
-                    alt="Community engagement" 
-                    className="w-full h-auto rounded-lg shadow-md"
-                  />
-                  <img 
-                    src="https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" 
+                    src="/maasai-wazungu.webp" 
                     alt="Maasai village" 
                     className="w-full h-auto rounded-lg shadow-md"
                   />
@@ -514,13 +505,8 @@ const SustainabilityPage = () => {
                 </div>
                 <div className="grid gap-4">
                   <img 
-                    src="https://images.unsplash.com/photo-1605000797499-95a51c5269ae?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" 
+                    src="/basket.jpg" 
                     alt="Local market" 
-                    className="w-full h-auto rounded-lg shadow-md"
-                  />
-                  <img 
-                    src="https://images.unsplash.com/photo-1551818255-e6e10975bc17?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" 
-                    alt="Artisan crafts" 
                     className="w-full h-auto rounded-lg shadow-md"
                   />
                 </div>
@@ -584,15 +570,11 @@ const SustainabilityPage = () => {
                 </div>
                 <div className="grid gap-4">
                   <img 
-                    src="https://images.unsplash.com/photo-1588072432836-e10032774350?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" 
+                    src="/learning.jpg" 
                     alt="Children learning" 
                     className="w-full h-auto rounded-lg shadow-md"
                   />
-                  <img 
-                    src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" 
-                    alt="Guide educating tourists" 
-                    className="w-full h-auto rounded-lg shadow-md"
-                  />
+
                 </div>
               </div>
             )}
@@ -651,13 +633,8 @@ const SustainabilityPage = () => {
                 </div>
                 <div className="grid gap-4">
                   <img 
-                    src="https://images.unsplash.com/photo-1605007493699-af65834f8a00?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" 
+                    src="/ngo.jpg" 
                     alt="Eco certification" 
-                    className="w-full h-auto rounded-lg shadow-md"
-                  />
-                  <img 
-                    src="https://images.unsplash.com/photo-1574285013029-29296a71930e?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" 
-                    alt="Community partnership" 
                     className="w-full h-auto rounded-lg shadow-md"
                   />
                 </div>

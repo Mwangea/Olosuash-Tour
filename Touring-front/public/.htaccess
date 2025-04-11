@@ -1,0 +1,43 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # ========================
+  # 1. PROXY CONFIGURATION
+  # ========================
+  
+  # Proxy API requests
+  RewriteCond %{REQUEST_URI} ^/api/ [NC]
+  RewriteRule ^api/(.*)$ https://api.olosuashi.com/api/$1 [P,L,QSA]
+
+  # Proxy uploads (IMAGES)
+  RewriteCond %{REQUEST_URI} ^/uploads/ [NC]
+  RewriteRule ^uploads/(.*)$ https://api.olosuashi.com/uploads/$1 [P,L,QSA]
+
+  # ========================
+  # 2. REACT ROUTING
+  # ========================
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_FILENAME} !-l
+  RewriteRule . /index.html [L]
+
+  # ========================
+  # 3. SECURITY & PERFORMANCE
+  # ========================
+  # Force HTTPS
+  RewriteCond %{HTTPS} off
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
+
+# ========================
+# 4. HEADERS FOR PROXY
+# ========================
+<IfModule mod_headers.c>
+  # CORS for proxied images
+  <FilesMatch "\.(jpg|jpeg|png|gif|webp|avif)$">
+    Header set Access-Control-Allow-Origin "*"
+    Header set Access-Control-Allow-Methods "GET"
+    Header set Cache-Control "public, max-age=2592000"
+  </FilesMatch>
+</IfModule>

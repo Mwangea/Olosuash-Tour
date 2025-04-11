@@ -210,6 +210,20 @@ const getTourBySlug = async (req, res, next) => {
   }
 };
 
+const getAllSlugs = async (req, res, next) => {
+  try {
+    const slugs = await Tour.getAllSlugs(); // You'll need to implement this method in your model
+    res.status(200).json({
+      status: 'success',
+      data: {
+        slugs
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 /**
  * @desc    Update tour
  * @route   PATCH /api/tours/:id
@@ -603,5 +617,6 @@ module.exports = {
   getTourStats,
   getRegions,
   getVehicleTypes,
-  getServiceCategories
+  getServiceCategories,
+  getAllSlugs
 };

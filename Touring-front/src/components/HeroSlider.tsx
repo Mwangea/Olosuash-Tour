@@ -24,12 +24,27 @@ const HeroSlider = () => {
     undefined
   );
 
+  // Function to ensure image URLs are absolute
+  const getFullImageUrl = (path: string) => {
+    // If the path is already a full URL, return it
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    // Otherwise, construct the full URL using your API domain
+    return `https://api.olosuashi.com${path.startsWith('/') ? path : `/${path}`}`;
+  };
+
   // Fetch hero slides from API
   useEffect(() => {
     const fetchHeroSlides = async () => {
       try {
         const response = await api.get("/hero");
-        setSlides(response.data.data.slides);
+        // Process slides to ensure full image URLs
+        const processedSlides = response.data.data.slides.map((slide: HeroSlide) => ({
+          ...slide,
+          image_path: getFullImageUrl(slide.image_path)
+        }));
+        setSlides(processedSlides);
         setLoading(false);
       } catch (err) {
         setError("Failed to load hero slides");
@@ -167,7 +182,7 @@ const HeroSlider = () => {
         ))}
       </div>
 
-      {/* Navigation Arrows - Hidden on mobile, shown on md and larger */}
+      {/* Navigation Arrows */}
       <button
         onClick={goToPrev}
         className="hidden md:block absolute left-4 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 text-white p-3 rounded-full hover:bg-opacity-70 transition z-10"

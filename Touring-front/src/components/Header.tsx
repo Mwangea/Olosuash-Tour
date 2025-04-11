@@ -302,10 +302,8 @@ const Header = () => {
       path: "/travel-info",
       dropdown: [
         { name: "Visa Requirements", path: "/travel-info/visa" },
-        { name: "Health & Vaccinations", path: "/travel-info/health" },
         { name: "Packing List", path: "/travel-info/packing" },
-        { name: "Weather Guide", path: "/travel-info/weather" },
-        { name: "Cultural Etiquette", path: "/travel-info/culture" },
+        
       ],
     },
     {
@@ -767,21 +765,21 @@ const Header = () => {
                         Profile
                       </Link>
                       <Link
-                        to="/my-bookings"
+                        to="/profile/bookings"
                         className="block py-2 text-base font-medium text-gray-700 hover:text-[#8B6B3D]"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         My Bookings
                       </Link>
                       <Link
-                        to="/wishlist"
+                        to="/profile/wishlist"
                         className="block py-2 text-base font-medium text-gray-700 hover:text-[#8B6B3D]"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         Wishlist
                       </Link>
                       <Link
-                        to="/settings"
+                        to="/profile/settings"
                         className="block py-2 text-base font-medium text-gray-700 hover:text-[#8B6B3D]"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >

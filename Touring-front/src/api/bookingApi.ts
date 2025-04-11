@@ -30,7 +30,7 @@ export interface BookingData {
   tour_id: string;
   travel_date: string;
   number_of_travelers: number;
-  payment_method: "online" | "whatsapp";
+  payment_method: 'online' | 'whatsapp' | 'call'; 
   special_requests?: string;
   whatsapp_number?: string;
   phone?: string;

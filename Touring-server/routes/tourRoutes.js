@@ -56,6 +56,7 @@ router.get('/top-rated', tourController.getTopRatedTours);
 router.get('/regions', tourController.getRegions);
 router.get('/vehicle-types', tourController.getVehicleTypes);
 router.get('/service-categories', tourController.getServiceCategories);
+router.get('/all-slugs', tourController.getAllSlugs);
 router.get('/slug/:slug', tourController.getTourBySlug);
 router.get('/:id/wishlist/check', tourController.checkWishlist);
 

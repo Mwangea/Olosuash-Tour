@@ -70,6 +70,16 @@ const Tour = () => {
   });
   const [searchTerm, setSearchTerm] = useState("");
 
+  // Function to ensure image URLs are absolute
+  const getFullImageUrl = (path: string) => {
+    // If the path is already a full URL, return it
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    // Otherwise, construct the full URL using your API domain
+    return `https://api.olosuashi.com${path.startsWith('/') ? path : `/${path}`}`;
+  };
+
   // Fetch tours from API
   useEffect(() => {
     const fetchTours = async () => {
@@ -89,14 +99,18 @@ const Tour = () => {
         const responseData = response.data.data || response.data;
         const toursData = responseData.tours || responseData.data || [];
         
-        // Process tours to set cover image
+        // Process tours to set cover image with full URLs
         const processedTours = toursData.map((tour: any) => {
           // Find the cover image from the images array
           const coverImage = tour.images?.find((img: any) => img.is_cover)?.image_path || 
                            (tour.images?.length > 0 ? tour.images[0].image_path : null);
           return {
             ...tour,
-            cover_image: coverImage || "https://via.placeholder.com/400x300?text=Tour+Image"
+            cover_image: coverImage ? getFullImageUrl(coverImage) : "https://via.placeholder.com/400x300?text=Tour+Image",
+            images: tour.images?.map((image: any) => ({
+              ...image,
+              image_path: getFullImageUrl(image.image_path)
+            })) || []
           };
         });
 

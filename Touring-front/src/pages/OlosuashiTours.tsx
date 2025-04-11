@@ -18,28 +18,28 @@ const AboutPage = () => {
 
   const teamMembers = [
     {
-      name: "John Kamau",
+      name: "Felix kiu",
       role: "Founder & CEO",
       bio: "Tourism expert with 15+ years experience in creating unforgettable travel experiences across Africa.",
-      image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80"
+      image: "/ceo.png"
     },
     {
-      name: "Sarah Mwangi",
-      role: "Operations Manager",
+      name: "Sarah Kyach",
+      role: "Operations Manager and Business consultant ",
       bio: "Ensures all our tours run smoothly with her exceptional organizational skills and attention to detail.",
-      image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80"
+      image: "/sarah.jpg"
     },
     {
-      name: "David Ochieng",
-      role: "Head Guide",
+      name: "victor solitei",
+      role: "Communication director",
       bio: "Certified safari guide with extensive knowledge of Kenya's wildlife and ecosystems.",
-      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80"
+      image: "/comm.jpg"
     },
     {
-      name: "Grace Atieno",
-      role: "Customer Relations",
-      bio: "Dedicated to ensuring every client receives personalized attention and exceptional service.",
-      image: "https://images.unsplash.com/photo-1554151228-14d9def656e4?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80"
+      name: "Matteo",
+      role: "Mawimbi Manager",
+      bio: "Committed to leading the Mawimbi team with excellence, ensuring seamless operations and delivering outstanding service to every client.",
+      image: "/matteo.jpg"
     }
   ];
 
@@ -85,7 +85,7 @@ const AboutPage = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
             <div>
               <p className="text-gray-600 mb-4">
-                Founded in 2010, Olosuashi began as a passion project by our CEO John Kamau, who wanted to share the beauty of Kenya with the world. 
+                Founded in 2010, Olosuashi began as a passion project by our CEO  Felix kiu, who wanted to share the beauty of Kenya with the world. 
                 What started as a small operation with just one Land Cruiser has grown into one of East Africa's most respected tour operators.
               </p>
               <p className="text-gray-600 mb-4">

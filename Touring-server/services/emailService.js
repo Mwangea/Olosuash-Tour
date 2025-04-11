@@ -35,7 +35,7 @@ const transporter = nodemailer.createTransport({
 const emailTemplate = (content, settings) => {
   const companyName = settings?.company_name || 'Olosuash Tours';
   const companyEmail = settings?.company_email || process.env.BOOKING_EMAIL_USERNAME;
-  const companyPhone = settings?.company_phone || '+254786027589';
+  const companyPhone = settings?.company_phone || '+254 708 414 577';
 
   return `
     <!DOCTYPE html>
@@ -316,7 +316,7 @@ exports.sendBookingConfirmationEmail = async (booking) => {
       1. M-Pesa Paybill: ${settings?.mpesa_paybill || '123456'}
       2. Account Number: ${booking.id}
       3. Amount: USD ${booking.total_price.toLocaleString()}
-      4. Send payment confirmation to WhatsApp: ${settings?.company_phone || '+254786027589'}
+      4. Send payment confirmation to WhatsApp: ${settings?.company_phone || '+254 708 414 577'}
       5. Or pay cash at our office
       
       🔔 Next Steps:
@@ -515,7 +515,7 @@ exports.sendBookingStatusUpdateEmail = async (booking) => {
         `;
         actionSection = `
           <div style="text-align: center; margin: 25px 0;">
-            <a href="https://www.olosuashtours.com/book-again" class="button">
+            <a href="https://www.olosuashtours.com/tours" class="button">
               Book Another Tour
             </a>
           </div>

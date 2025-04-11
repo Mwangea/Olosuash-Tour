@@ -437,7 +437,22 @@ const tourModel = {
     // Use the existing findById method to fetch all tour details
     return this.findById(tourRows[0].id);
   },
-  
+
+  /**
+   * Get all active tour slugs for sitemap generation
+   * @returns {Promise<Array>} Array of slug strings
+   */
+  async getAllSlugs() {
+    try {
+      const [rows] = await pool.query(
+        `SELECT slug FROM tours`  // Removed WHERE clause to match findBySlug behavior
+      );
+      return rows.map(row => row.slug);
+    } catch (error) {
+      console.error('Error fetching tour slugs:', error);
+      return [];
+    }
+  },
   /**
  * Update tour
  * @param {number} id - Tour ID

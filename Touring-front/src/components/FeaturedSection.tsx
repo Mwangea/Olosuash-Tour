@@ -22,23 +22,36 @@ const FeaturedSection = () => {
   } | null>(null);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
+  // Function to ensure image URLs are absolute
+  const getFullImageUrl = (path: string) => {
+    // If the path is already a full URL, return it
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    // Otherwise, construct the full URL using your API domain
+    return `https://api.olosuashi.com${path.startsWith('/') ? path : `/${path}`}`;
+  };
+
   useEffect(() => {
     const fetchFeaturedTours = async () => {
       try {
         setLoading(true);
         const response = await api.get("/tours/featured?limit=3");
+        // Process tours and their images to ensure full URLs
         const toursWithImages = response.data.data.tours.map((tour: Tour) => ({
           ...tour,
           // Ensure images array exists and has at least the cover image
-          images: tour.images?.length
-            ? tour.images
-            : [
-                {
-                  id: "cover",
-                  image_path: tour.cover_image,
-                  is_cover: true,
-                },
-              ],
+          images: (tour.images?.length ? tour.images : [
+            {
+              id: "cover",
+              image_path: tour.cover_image,
+              is_cover: true,
+            },
+          ]).map((image: { id: string, image_path: string, is_cover: boolean }) => ({
+            ...image,
+            image_path: getFullImageUrl(image.image_path)
+          })),
+          cover_image: getFullImageUrl(tour.cover_image)
         }));
 
         setTours(toursWithImages);

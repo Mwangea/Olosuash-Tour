@@ -18,7 +18,7 @@ const ensureUploadDirExists = async () => {
 
 // Generate full image URL
 const generateImageUrl = (imagePath) => {
-  return `/uploads/hero-images/${imagePath}`;
+  return `https://api.olosuashi.com/uploads/hero-images/${imagePath}`;
 };
 
 exports.uploadHeroImage = uploadHeroImage;

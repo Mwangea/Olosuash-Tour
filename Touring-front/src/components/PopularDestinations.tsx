@@ -4,19 +4,19 @@ const PopularDestinations = () => {
   const destinations = [
     {
       name: "Masai Mara",
-      image: "https://images.unsplash.com/photo-1602526430784-7826e589c1b2",
+      image: "/wildbeest.jpg",
       description: "World-famous for the Great Migration",
       link: "/tours?destination=masai-mara"
     },
     {
       name: "Amboseli",
-      image: "https://images.unsplash.com/photo-1589561253898-768105ca91a8",
+      image: "/amboseli.jpg",
       description: "Stunning views of Kilimanjaro",
       link: "/tours?destination=amboseli"
     },
     {
       name: "Tsavo",
-      image: "https://images.unsplash.com/photo-1551632436-cbf8dd35adfa",
+      image: "/Tsavo.jpg",
       description: "Kenya's largest national park",
       link: "/tours?destination=tsavo"
     },

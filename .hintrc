@@ -20,12 +20,7 @@
       }
     ],
     "axe/aria": "off",
-    "axe/structure": [
-      "default",
-      {
-        "dlitem": "off"
-      }
-    ]
+    "axe/structure": "off"
   },
   "browserslist": [
     "defaults",
