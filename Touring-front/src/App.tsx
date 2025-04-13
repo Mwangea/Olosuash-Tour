@@ -38,6 +38,13 @@ import { BookingSuccess } from './pages/BookingSuccess';
 import TourSlugPage from './TourPages/TourSlugPage';
 import PackagingList from './pages/PackagingList';
 import VisaRequirements from './pages/VisaRequirements';
+import AdminExperiences from './admin/pages/AdminExperiences';
+import AdminCategories from './admin/pages/AdminCategories';
+import CategoryForm from './admin/components/CategoryForm';
+import CreateExperience from './admin/components/CreateExperience';
+import EditExperience from './admin/components/EditExperience';
+import ExperienceSlugPage from './TourPages/ExperienceSlugPage';
+import ExperiencePage from './pages/ExperiencePage';
 
 // Create a User Layout component with Header and Footer
 const UserLayout = ({ children }: { children: React.ReactNode }) => {
@@ -112,6 +119,13 @@ function App() {
             <Route path='/admin/bookings' element={<AdminBooking />} />
             <Route path="/admin/tours/new" element={<TourForm />} />
             <Route path="/admin/tours/edit/:id" element={<TourForm />} />
+            <Route path='/admin/experience' element={<AdminExperiences />} />
+            <Route path="/admin/categories" element={<AdminCategories />} />
+            <Route path="/admin/categories/new" element={<CategoryForm />} />
+            <Route path="/admin/categories/edit/:id" element={<CategoryForm />} />
+            <Route path='/admin/experiences/new' element={<CreateExperience />} />
+            <Route path="/admin/experience/edit/:id" element={<EditExperience />} />
+
             
 
             {/* User Routes - with header/footer */}
@@ -122,10 +136,12 @@ function App() {
             <Route path='/about/safari-guide' element={<UserLayout><SafariGuides /></UserLayout>} />
             <Route path='/faq' element={<UserLayout><FAQPage /></UserLayout>} />
             <Route path='/tours' element={<UserLayout><Tour /></UserLayout>} />
-            <Route path="/booking-success" element={<UserLayout><BookingSuccess /></UserLayout>} />
+            <Route path='/experience' element={<UserLayout><ExperiencePage /></UserLayout>} />
+            <Route path="/experience/:slug" element={<UserLayout><ExperienceSlugPage /></UserLayout>} />
             <Route path="/tours/:slug" element={<UserLayout><TourSlugPage /></UserLayout>} />
             <Route path='travel-info/packing' element={<UserLayout><PackagingList /></UserLayout>} />
             <Route path='travel-info/visa' element={<UserLayout><VisaRequirements /></UserLayout>} />
+            <Route path="/booking-success" element={<UserLayout><BookingSuccess /></UserLayout>} />
 
             
          

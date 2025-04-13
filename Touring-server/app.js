@@ -15,6 +15,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const tourRoutes = require('./routes/tourRoutes');
 const heroRoutes = require('./routes/heroRoutes');
 const bookingRouter = require('./routes/bookingRoutes');
+const experienceRoutes = require('./routes/experienceRoutes');
 
 // Passport config
 require('./config/passport');
@@ -121,6 +122,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/tours', tourRoutes);
 app.use('/api/hero', heroRoutes);
 app.use('/api/bookings', bookingRouter);
+app.use('/api/experiences', experienceRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

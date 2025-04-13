@@ -92,7 +92,7 @@ const TourCategories = () => {
 
         <div className="text-center mt-12">
           <Link 
-            to="/tours" 
+            to="/experience" 
             className="inline-flex items-center px-6 py-3 border-2 border-[#8B6B3D] text-[#8B6B3D] hover:bg-[#8B6B3D] hover:text-white rounded-lg font-medium transition duration-300 group"
           >
             <span>Explore All Safari Experiences</span>

@@ -17,8 +17,10 @@ import {
   ChevronLeft,
   ChevronRight,
   LayoutDashboard,
+  CassetteTapeIcon,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { FaBinoculars } from 'react-icons/fa';
 //import AdminLoadingPage from './AdminLoadingPage';
 
 
@@ -32,6 +34,8 @@ const navigation = [
   { name: 'Users', href: '/admin/users', icon: Users },
   { name: 'Tours', href: '/admin/tours', icon: Map },
   { name: 'Bookings', href: '/admin/bookings', icon: BookOpen },
+  { name: 'Categories', href:'/admin/categories', icon: CassetteTapeIcon},
+  {name: 'Experience', href: '/admin/experience', icon: FaBinoculars},
   { name: 'Settings', href: '/admin/settings', icon: Settings },
 ];
 

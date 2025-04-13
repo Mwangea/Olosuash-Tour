@@ -159,7 +159,7 @@ const emailTemplate = (content, settings) => {
 const sendEmail = async (options) => {
   try {
     const settings = await getSettings();
-    const companyName = settings?.company_name || 'Olosuash Tours';
+    const companyName = settings?.company_name || 'Olosuashi Tours';
     const companyEmail = settings?.company_email || process.env.BOOKING_EMAIL_USERNAME;
 
     // Get the logo path
@@ -196,7 +196,7 @@ const sendEmail = async (options) => {
 exports.sendBookingConfirmationEmail = async (booking) => {
   try {
     const settings = await getSettings();
-    const companyName = settings?.company_name || 'Olosuash Tours';
+    const companyName = settings?.company_name || 'Olosuashi Tours';
     const formattedDate = format(new Date(booking.travel_date), 'MMMM do, yyyy');
     
     let whatsappSection = '';
@@ -366,7 +366,7 @@ exports.sendAdminBookingNotificationEmail = async (booking) => {
       return;
     }
 
-    const companyName = settings?.company_name || 'Olosuash Tours';
+    const companyName = settings?.company_name || 'Olosuashi Tours';
     const formattedDate = format(new Date(booking.travel_date), 'MMMM do, yyyy');
     const bookingUrl = `${process.env.BASE_URL}/admin/bookings?view=${booking.id}` || "http://localhost:5173/admin/bookings/";
 
@@ -483,7 +483,7 @@ exports.sendAdminBookingNotificationEmail = async (booking) => {
 exports.sendBookingStatusUpdateEmail = async (booking) => {
   try {
     const settings = await getSettings();
-    const companyName = settings?.company_name || 'Olosuash Tours';
+    const companyName = settings?.company_name || 'Olosuashi Tours';
     const formattedDate = format(new Date(booking.travel_date), 'MMMM do, yyyy');
     
     let statusMessage = '';

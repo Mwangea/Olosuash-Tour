@@ -5,7 +5,7 @@ const logger = require('../utils/logger');
 const whatsappConfig = {
   apiUrl: process.env.WHATSAPP_API_URL || 'https://api.whatsapp.com/send',
   adminNumber: process.env.ADMIN_WHATSAPP_NUMBER || '+254786027589',
-  companyName: process.env.COMPANY_NAME || 'Olosuash Tours',
+  companyName: process.env.COMPANY_NAME || 'Olosuashi Tours',
   companyPhone: process.env.COMPANY_PHONE || '+254786027589'
 };
 

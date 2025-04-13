@@ -10,12 +10,12 @@ export default defineConfig({
   server: {
     proxy: {
       '/uploads': {
-        target: 'https://api.olosuashi.com/',
+        target: process.env.NODE_ENV === 'development' ? 'http://localhost:8000/' : 'https://api.olosuashi.com/',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/uploads/, '/uploads')
       },
       '/api': {
-        target: 'https://api.olosuashi.com/',
+        target: process.env.NODE_ENV === 'development' ? 'http://localhost:8000/' : 'https://api.olosuashi.com/',
         changeOrigin: true
       }
     }
