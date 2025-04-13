@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { FiImage, FiUpload, FiTrash2, FiX, FiPlus } from "react-icons/fi";
@@ -22,6 +23,7 @@ interface Section {
   description: string;
   image_path: string | null;
   order: number;
+  existing_image?: string; // Track existing image paths separately
 }
 
 const EditExperience = () => {
@@ -32,10 +34,14 @@ const EditExperience = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [existingImages, setExistingImages] = useState<Image[]>([]);
   const [newImages, setNewImages] = useState<File[]>([]);
-  const [imagePreviews, setImagePreviews] = useState<{url: string, isCover: boolean}[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<
+    { url: string; isCover: boolean }[]
+  >([]);
   const [coverImageId, setCoverImageId] = useState<string | null>(null);
   const [sections, setSections] = useState<Section[]>([]);
-  const [newSectionImages, setNewSectionImages] = useState<{[key: number]: File}>({});
+  const [newSectionImages, setNewSectionImages] = useState<{
+    [key: number]: File;
+  }>({});
 
   const [formData, setFormData] = useState({
     title: "",
@@ -56,16 +62,13 @@ const EditExperience = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        
-        // Fetch experience data
+
         const experienceResponse = await api.get(`/experiences/${id}`);
         const experience = experienceResponse.data.data.experience;
-        
-        // Fetch categories
+
         const categoriesResponse = await api.get("/experiences/categories");
         setCategories(categoriesResponse.data.data.categories);
 
-        // Set form data
         setFormData({
           title: experience.title,
           category_id: experience.category_id,
@@ -81,15 +84,20 @@ const EditExperience = () => {
           is_active: experience.is_active,
         });
 
-        // Set existing images
         setExistingImages(experience.images);
-        const coverImage = experience.images.find((img: { is_cover: boolean; id: string }) => img.is_cover);
+        const coverImage = experience.images.find((img: any) => img.is_cover);
         if (coverImage) {
           setCoverImageId(coverImage.id);
         }
 
-        // Set sections
-        setSections(experience.sections || []);
+        // Initialize sections with existing_image for tracking
+        setSections(
+            experience.sections?.map((section: any) => ({
+              ...section,
+              id: `existing-${section.id}`, // Prefix existing sections
+              existing_image: section.image_path,
+            })) || []
+          );
 
         setLoading(false);
       } catch (error) {
@@ -103,12 +111,15 @@ const EditExperience = () => {
   }, [id, navigate]);
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value, type } = e.target;
-    const checked = type === "checkbox" ? (e.target as HTMLInputElement).checked : undefined;
+    const checked =
+      type === "checkbox" ? (e.target as HTMLInputElement).checked : undefined;
 
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
@@ -118,18 +129,22 @@ const EditExperience = () => {
     if (!e.target.files) return;
 
     const files = Array.from(e.target.files);
-    setNewImages(prev => [...prev, ...files]);
+    setNewImages((prev) => [...prev, ...files]);
 
     // Create previews
-    const newPreviews = files.map(file => ({
+    const newPreviews = files.map((file) => ({
       url: URL.createObjectURL(file),
-      isCover: false
+      isCover: false,
     }));
-    setImagePreviews(prev => [...prev, ...newPreviews]);
+    setImagePreviews((prev) => [...prev, ...newPreviews]);
 
     // If no cover image is set yet, set the first one as cover
-    if (existingImages.length === 0 && imagePreviews.length === 0 && newPreviews.length > 0) {
-      setImagePreviews(prev => {
+    if (
+      existingImages.length === 0 &&
+      imagePreviews.length === 0 &&
+      newPreviews.length > 0
+    ) {
+      setImagePreviews((prev) => {
         const updated = [...prev];
         if (updated.length > 0) updated[0].isCover = true;
         return updated;
@@ -138,14 +153,14 @@ const EditExperience = () => {
   };
 
   const removeNewImage = (index: number) => {
-    setNewImages(prev => prev.filter((_, i) => i !== index));
-    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+    setNewImages((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
   const removeExistingImage = async (imageId: string) => {
     try {
       await api.delete(`/experiences/images/${imageId}`);
-      setExistingImages(prev => prev.filter(img => img.id !== imageId));
+      setExistingImages((prev) => prev.filter((img) => img.id !== imageId));
       if (coverImageId === imageId) {
         setCoverImageId(null);
       }
@@ -160,47 +175,58 @@ const EditExperience = () => {
     setCoverImageId(id);
   };
 
-  const handleSectionChange = (sectionId: string, field: keyof Section, value: string) => {
-    setSections(prev =>
-      prev.map(section =>
+  const handleSectionChange = (
+    sectionId: string,
+    field: keyof Section,
+    value: string
+  ) => {
+    setSections((prev) =>
+      prev.map((section) =>
         section.id === sectionId ? { ...section, [field]: value } : section
       )
     );
   };
 
-  const handleSectionImageUpload = (sectionId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSectionImageUpload = (
+    sectionIndex: number,
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     if (!e.target.files || !e.target.files[0]) return;
     const file = e.target.files[0];
-    const sectionIndex = sections.findIndex(s => s.id === sectionId);
-    
-    setNewSectionImages(prev => ({
+  
+    setNewSectionImages((prev) => ({
       ...prev,
-      [sectionIndex]: file
+      [sectionIndex]: file,
     }));
-
-    setSections(prev =>
-      prev.map(section =>
-        section.id === sectionId
+  
+    const previewUrl = URL.createObjectURL(file);
+    setSections((prev) =>
+      prev.map((section, idx) =>
+        idx === sectionIndex
           ? {
               ...section,
-              image_path: URL.createObjectURL(file)
+              image_path: previewUrl,
+              existing_image: undefined,
             }
           : section
       )
     );
   };
 
-  const removeSectionImage = (sectionId: string) => {
-    setSections(prev =>
-      prev.map(section =>
-        section.id === sectionId
-          ? { ...section, image_path: null }
+  const removeSectionImage = (sectionIndex: number) => {
+    setSections((prev) =>
+      prev.map((section, idx) =>
+        idx === sectionIndex
+          ? {
+              ...section,
+              image_path: null,
+              existing_image: undefined,
+            }
           : section
       )
     );
-    
-    const sectionIndex = sections.findIndex(s => s.id === sectionId);
-    const updatedNewImages = {...newSectionImages};
+
+    const updatedNewImages = { ...newSectionImages };
     delete updatedNewImages[sectionIndex];
     setNewSectionImages(updatedNewImages);
   };
@@ -210,14 +236,14 @@ const EditExperience = () => {
       toast.error("Maximum of 5 sections allowed");
       return;
     }
-    setSections(prev => [
+    setSections((prev) => [
       ...prev,
       {
         id: `new-${Date.now()}`,
         title: "",
         description: "",
         image_path: null,
-        order: prev.length + 1
+        order: prev.length + 1,
       },
     ]);
   };
@@ -227,23 +253,32 @@ const EditExperience = () => {
       toast.error("At least one section is required");
       return;
     }
-    setSections(prev => prev.filter(section => section.id !== sectionId));
+
+    // Remove any new image associated with this section
+    const sectionIndex = sections.findIndex((s) => s.id === sectionId);
+    if (sectionIndex !== -1) {
+      const updatedNewImages = { ...newSectionImages };
+      delete updatedNewImages[sectionIndex];
+      setNewSectionImages(updatedNewImages);
+    }
+
+    setSections((prev) => prev.filter((section) => section.id !== sectionId));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-
+  
     try {
       const formDataToSend = new FormData();
-
+  
       // Append all form data
       Object.entries(formData).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
           formDataToSend.append(key, value.toString());
         }
       });
-
+  
       // Append new images
       newImages.forEach((file, index) => {
         formDataToSend.append("images", file);
@@ -251,42 +286,41 @@ const EditExperience = () => {
           formDataToSend.append("cover_image_index", index.toString());
         }
       });
-
+  
       // Append existing cover image if no new cover is selected
       if (coverImageId && newImages.length === 0) {
         formDataToSend.append("cover_image_id", coverImageId);
       }
-
-      // Append sections
+  
+      // Append sections data
       sections.forEach((section, index) => {
         formDataToSend.append(`sections[${index}][id]`, section.id);
         formDataToSend.append(`sections[${index}][title]`, section.title);
         formDataToSend.append(`sections[${index}][description]`, section.description);
         formDataToSend.append(`sections[${index}][order]`, section.order.toString());
-        
-        // If this section has a new image
+  
+        // Handle section images
         if (newSectionImages[index]) {
           formDataToSend.append(`section_images[${index}]`, newSectionImages[index]);
-        } else if (section.image_path && !section.image_path.startsWith('blob:')) {
-          // Existing image (not a new blob URL)
-          formDataToSend.append(`sections[${index}][existing_image]`, section.image_path);
+        } else if (section.existing_image) {
+          formDataToSend.append(`sections[${index}][existing_image]`, section.existing_image);
         }
       });
-
-      await api.put(`/experiences/${id}`, formDataToSend, {
+  
+      await api.patch(`/experiences/${id}`, formDataToSend, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
-
+  
       toast.success("Experience updated successfully!");
       navigate("/admin/experience");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating experience:", error);
       toast.error(
-        (error as Error & { response?: { data?: { message?: string } } }).response?.data?.message ||
-        (error as Error).message ||
-        "Failed to update experience"
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to update experience"
       );
     } finally {
       setSaving(false);
@@ -327,9 +361,7 @@ const EditExperience = () => {
     <AdminLayout>
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold text-[#8B6B3D]">
-            Edit Experience
-          </h1>
+          <h1 className="text-2xl font-bold text-[#8B6B3D]">Edit Experience</h1>
           <button
             onClick={() => navigate("/admin/experience")}
             className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
@@ -338,7 +370,10 @@ const EditExperience = () => {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white shadow rounded-lg p-6">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white shadow rounded-lg p-6"
+        >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             {/* Basic Information */}
             <div className="space-y-6">
@@ -643,7 +678,9 @@ const EditExperience = () => {
             {/* Existing Images */}
             {existingImages.length > 0 && (
               <div className="mb-6">
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Existing Images</h3>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">
+                  Existing Images
+                </h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                   {existingImages.map((img) => (
                     <div key={img.id} className="relative group">
@@ -652,7 +689,9 @@ const EditExperience = () => {
                           src={img.image_path}
                           alt="Preview"
                           className={`h-full w-full object-cover ${
-                            coverImageId === img.id ? "border-2 border-[#8B6B3D]" : ""
+                            coverImageId === img.id
+                              ? "border-2 border-[#8B6B3D]"
+                              : ""
                           }`}
                         />
                       </div>
@@ -692,7 +731,9 @@ const EditExperience = () => {
             {/* New Images */}
             {imagePreviews.length > 0 && (
               <div className="mb-6">
-                <h3 className="text-sm font-medium text-gray-700 mb-2">New Images</h3>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">
+                  New Images
+                </h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                   {imagePreviews.map((img, index) => (
                     <div key={index} className="relative group">
@@ -711,10 +752,10 @@ const EditExperience = () => {
                             <button
                               type="button"
                               onClick={() => {
-                                setImagePreviews(prev =>
+                                setImagePreviews((prev) =>
                                   prev.map((item, i) => ({
                                     ...item,
-                                    isCover: i === index
+                                    isCover: i === index,
                                   }))
                                 );
                               }}
@@ -812,7 +853,11 @@ const EditExperience = () => {
                       id={`section-description-${section.id}`}
                       value={section.description}
                       onChange={(e) =>
-                        handleSectionChange(section.id, "description", e.target.value)
+                        handleSectionChange(
+                          section.id,
+                          "description",
+                          e.target.value
+                        )
                       }
                       rows={3}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#8B6B3D] focus:border-[#8B6B3D]"
@@ -823,18 +868,18 @@ const EditExperience = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Section Image (Optional)
                     </label>
-                    {section.image_path ? (
+                    {section.image_path || section.existing_image ? (
                       <div className="relative group">
                         <div className="h-32 w-full rounded-md overflow-hidden">
                           <img
-                            src={section.image_path}
+                            src={section.image_path || section.existing_image}
                             alt="Section preview"
                             className="h-full w-full object-cover"
                           />
                         </div>
                         <button
                           type="button"
-                          onClick={() => removeSectionImage(section.id)}
+                          onClick={() => removeSectionImage(index)}
                           className="absolute top-2 right-2 p-1 bg-white rounded-full text-red-600 hover:bg-red-600 hover:text-white"
                           title="Remove image"
                         >
@@ -847,18 +892,18 @@ const EditExperience = () => {
                           <FiImage className="mx-auto h-8 w-8 text-gray-400" />
                           <div className="flex text-sm text-gray-600">
                             <label
-                              htmlFor={`section-image-${section.id}`}
+                              htmlFor={`section-image-${section.id}-${index}`}
                               className="relative cursor-pointer bg-white rounded-md font-medium text-[#8B6B3D] hover:text-[#6B4F2D] focus-within:outline-none"
                             >
                               <span>Upload image</span>
                               <input
-                                id={`section-image-${section.id}`}
-                                name={`section-image-${section.id}`}
+                                id={`section-image-${section.id}-${index}`}
+                                name={`section-image-${section.id}-${index}`}
                                 type="file"
                                 className="sr-only"
                                 accept="image/*"
                                 onChange={(e) =>
-                                  handleSectionImageUpload(section.id, e)
+                                  handleSectionImageUpload(index, e)
                                 }
                               />
                             </label>

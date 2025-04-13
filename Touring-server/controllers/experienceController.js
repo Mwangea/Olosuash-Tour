@@ -20,8 +20,8 @@ const formatExperienceResponse = (experience, groupSize = null) => {
   
     return {
       ...experience,
-      price: price, // Ensure this is a number
-      discount_price: discount_price, // Ensure this is a number or null
+      price: price,
+      discount_price: discount_price,
       totalPrice,
       discountPrice,
       priceDisplay: `$${totalPrice.toFixed(2)}`,
@@ -159,9 +159,6 @@ const deleteCategory = async (req, res, next) => {
 // Experience Controllers
 const createExperience = async (req, res, next) => {
     try {
-      console.log('Request body:', req.body);
-      console.log('Uploaded files:', req.files);
-  
       if (!req.files?.images || req.files.images.length === 0) {
         throw new AppError('At least one image is required', 400);
       }
@@ -231,7 +228,8 @@ const getAllExperiences = async (req, res, next) => {
       min_price: req.query.min_price,
       max_price: req.query.max_price,
       difficulty: req.query.difficulty,
-      search: req.query.search
+      search: req.query.search,
+      is_active: req.user?.role === 'admin' ? undefined : true // Only show active to non-admins
     };
     
     const result = await Experience.getAllExperiences(options);
@@ -250,62 +248,179 @@ const getAllExperiences = async (req, res, next) => {
 };
 
 const getExperienceById = async (req, res, next) => {
-  try {
-    const experience = await Experience.getExperienceById(req.params.id);
-    if (!experience) {
-      return next(new AppError('Experience not found', 404));
-    }
-
-    // Calculate price based on group size if provided
-    const groupSize = req.query.groupSize ? parseInt(req.query.groupSize) : experience.min_group_size || 1;
-    
-    res.status(200).json({
-      status: 'success',
-      data: {
-        experience: formatExperienceResponse(experience, groupSize)
+    try {
+      const experience = await Experience.getExperienceById(req.params.id);
+      if (!experience) {
+        return next(new AppError('Experience not found', 404));
       }
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  
+      // Check if experience is active (for non-admin users)
+      if (!experience.is_active && (!req.user || req.user.role !== 'admin')) {
+        return next(new AppError('Experience not found', 404));
+      }
+  
+      // Calculate price based on group size if provided
+      const groupSize = req.query.groupSize ? parseInt(req.query.groupSize) : experience.min_group_size || 1;
+      
+      res.status(200).json({
+        status: 'success',
+        data: {
+          experience: formatExperienceResponse(experience, groupSize)
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
 
 const getExperienceBySlug = async (req, res, next) => {
-  try {
-    const experience = await Experience.getExperienceBySlug(req.params.slug);
-    if (!experience) {
-      return next(new AppError('Experience not found', 404));
-    }
-
-    const groupSize = req.query.groupSize ? parseInt(req.query.groupSize) : experience.min_group_size || 1;
-    
-    res.status(200).json({
-      status: 'success',
-      data: {
-        experience: formatExperienceResponse(experience, groupSize)
+    try {
+      const experience = await Experience.getExperienceBySlug(req.params.slug);
+      if (!experience) {
+        return next(new AppError('Experience not found', 404));
       }
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  
+      // Check if experience is active (for non-admin users)
+      if (!experience.is_active && (!req.user || req.user.role !== 'admin')) {
+        return next(new AppError('Experience not found', 404));
+      }
+  
+      const groupSize = req.query.groupSize ? parseInt(req.query.groupSize) : experience.min_group_size || 1;
+      
+      res.status(200).json({
+        status: 'success',
+        data: {
+          experience: formatExperienceResponse(experience, groupSize)
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
 
 const updateExperience = async (req, res, next) => {
-  try {
-    const experience = await Experience.updateExperience(req.params.id, req.body);
-    if (!experience) {
-      return next(new AppError('Experience not found', 404));
-    }
-    res.status(200).json({
-      status: 'success',
-      data: {
-        experience: formatExperienceResponse(experience)
+    try {
+      const experienceId = req.params.id;
+      const formData = req.body;
+      
+      // Convert form data to proper format
+      const experienceData = {
+        title: formData.title,
+        category_id: formData.category_id,
+        short_description: formData.short_description,
+        description: formData.description,
+        duration: formData.duration,
+        price: formData.price,
+        discount_price: formData.discount_price || null,
+        min_group_size: formData.min_group_size,
+        max_group_size: formData.max_group_size,
+        difficulty: formData.difficulty,
+        is_featured: formData.is_featured === 'true',
+        is_active: formData.is_active === 'true'
+      };
+  
+      // First update the basic experience info
+      let experience = await Experience.updateExperience(experienceId, experienceData);
+      
+      // Handle images if any were uploaded
+      if (req.files?.images) {
+        // Add new images
+        const images = Array.isArray(req.files.images) ? req.files.images : [req.files.images];
+        
+        for (const [index, file] of images.entries()) {
+          const isCover = index === (parseInt(formData.cover_image_index) || 0);
+          await Experience.addExperienceImage(
+            experienceId,
+            `/uploads/experience-images/${file.filename}`,
+            isCover
+          );
+        }
       }
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  
+      // Handle cover image from existing images if specified
+      if (formData.cover_image_id) {
+        await Experience.setExperienceImageAsCover(experienceId, formData.cover_image_id);
+      }
+  
+      // Handle sections if any were provided
+      if (formData.sections) {
+        // First, get existing sections to know which to delete
+        const existingSections = await Experience.getExperienceSections(experienceId);
+        const existingSectionIds = existingSections.map(s => s.id);
+        const incomingSectionIds = [];
+        
+        // Process each section
+        for (const [index, section] of Object.entries(formData.sections)) {
+          const sectionData = {
+            title: section.title,
+            description: section.description,
+            order: section.order || index,
+            image_path: null
+          };
+  
+          // Handle section image
+          if (req.files?.[`section_images[${index}]`]) {
+            const file = req.files[`section_images[${index}]`][0];
+            sectionData.image_path = `/uploads/experience-images/${file.filename}`;
+          } else if (section.existing_image) {
+            sectionData.image_path = section.existing_image;
+          }
+  
+          // Update or insert section
+          if (section.id && section.id.startsWith('existing-')) {
+            const sectionId = section.id.replace('existing-', '');
+            incomingSectionIds.push(sectionId);
+            await Experience.updateExperienceSection(
+              sectionId,
+              sectionData.title,
+              sectionData.description,
+              sectionData.image_path,
+              sectionData.order
+            );
+          } else {
+            // New section
+            await Experience.addExperienceSection(
+              experienceId,
+              sectionData.title,
+              sectionData.description,
+              sectionData.image_path,
+              sectionData.order
+            );
+          }
+        }
+  
+        // Delete sections that were removed
+        const sectionsToDelete = existingSectionIds.filter(id => !incomingSectionIds.includes(id));
+        if (sectionsToDelete.length > 0) {
+          await Experience.deleteExperienceSections(sectionsToDelete);
+        }
+      }
+  
+      // Get the updated experience with all relations
+      experience = await Experience.getExperienceById(experienceId);
+      
+      res.status(200).json({
+        status: 'success',
+        data: {
+          experience: formatExperienceResponse(experience)
+        }
+      });
+    } catch (error) {
+      // Clean up uploaded files if error occurs
+      if (req.files) {
+        Object.values(req.files).forEach(files => {
+          if (Array.isArray(files)) {
+            files.forEach(file => {
+              fs.unlink(file.path, err => {
+                if (err) console.error('Error deleting file:', err);
+              });
+            });
+          }
+        });
+      }
+      next(error);
+    }
+  };
 
 const deleteExperience = async (req, res, next) => {
   try {

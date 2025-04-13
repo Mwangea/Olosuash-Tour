@@ -8,28 +8,28 @@ const TourCategories = () => {
       name: "Wildlife Safaris",
       icon: <GiLion className="text-3xl" />,
       description: "Track the Big Five through Kenya's legendary national parks",
-      link: "/tours?type=wildlife",
+      link: "/experience?category_id=1&page=1",
       accent: "bg-[#8B6B3D]"
     },
     {
       name: "Adventure Tours",
       icon: <GiMountainRoad className="text-3xl" />,
       description: "Hiking, biking and adrenaline-packed wilderness experiences",
-      link: "/tours?type=adventure",
+      link: "/experience?category_id=2&page=1",
       accent: "bg-[#3A5A78]"
     },
     {
       name: "Cultural Journeys",
       icon: <GiElephant className="text-3xl" />,
       description: "Authentic interactions with Kenya's diverse communities",
-      link: "/tours?type=cultural",
+      link: "/experience?category_id=3&page=1",
       accent: "bg-[#7D5C3E]"
     },
     {
       name: "Coastal Retreats",
       icon: <GiIsland className="text-3xl" />,
       description: "Pristine beaches and island escapes along the Indian Ocean",
-      link: "/tours?type=beach",
+      link: "/experience?category_id=4&page=1",
       accent: "bg-[#2C5E73]"
     }
   ];

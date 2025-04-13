@@ -226,7 +226,8 @@ const experienceModel = {
       min_price,
       max_price,
       difficulty,
-      search
+      search,
+      is_active // Can be true, false, or undefined (no filter)
     } = options;
     
     const offset = (page - 1) * limit;
@@ -238,10 +239,16 @@ const experienceModel = {
         (SELECT image_path FROM experience_images WHERE experience_id = e.id AND is_cover = 1 LIMIT 1) as cover_image
       FROM experiences e
       JOIN experience_categories c ON e.category_id = c.id
-      WHERE e.is_active = 1
+      WHERE 1=1
     `;
     
     const queryParams = [];
+    
+    // Apply is_active filter if specified
+    if (is_active !== undefined) {
+      query += ` AND e.is_active = ?`;
+      queryParams.push(is_active ? 1 : 0);
+    }
     
     if (category_id) {
       query += ` AND e.category_id = ?`;
@@ -280,8 +287,13 @@ const experienceModel = {
     const [rows] = await pool.query(query, queryParams);
     
     // Get total count for pagination
-    let countQuery = `SELECT COUNT(*) as total FROM experiences e WHERE e.is_active = 1`;
+    let countQuery = `SELECT COUNT(*) as total FROM experiences e WHERE 1=1`;
     const countParams = [];
+    
+    if (is_active !== undefined) {
+      countQuery += ` AND e.is_active = ?`;
+      countParams.push(is_active ? 1 : 0);
+    }
     
     if (category_id) {
       countQuery += ` AND e.category_id = ?`;
@@ -789,7 +801,51 @@ const experienceModel = {
       [categoryId, limit]
     );
     return rows;
-  }
+  },
+
+   /**
+   * Get experience sections
+   */
+   async getExperienceSections(experienceId) {
+    const [rows] = await pool.query(
+      `SELECT id FROM experience_sections WHERE experience_id = ?`,
+      [experienceId]
+    );
+    return rows;
+  },
+   /**
+   * Update experience section
+   */
+   async updateExperienceSection(sectionId, title, description, imagePath, order) {
+    await pool.query(
+      `UPDATE experience_sections SET 
+        title = ?, description = ?, image_path = ?, section_order = ?
+       WHERE id = ?`,
+      [title, description, imagePath, order, sectionId]
+    );
+  },
+  /**
+   * Add experience section
+   */
+  async addExperienceSection(experienceId, title, description, imagePath, order) {
+    await pool.query(
+      `INSERT INTO experience_sections 
+       (experience_id, title, description, image_path, section_order)
+       VALUES (?, ?, ?, ?, ?)`,
+      [experienceId, title, description, imagePath, order]
+    );
+  },
+
+  /**
+   * Delete experience sections
+   */
+  async deleteExperienceSections(sectionIds) {
+    await pool.query(
+      'DELETE FROM experience_sections WHERE id IN (?)',
+      [sectionIds]
+    );
+  },
+  
 };
 
 module.exports = experienceModel;
