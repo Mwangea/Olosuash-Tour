@@ -30,33 +30,39 @@ router.delete(
   experienceController.deleteCategory
 );
 
+
+const experienceUpload = uploadExperienceArray([
+  { name: 'images', maxCount: 10 },
+  { name: 'section_image_1', maxCount: 1 },
+  { name: 'section_image_2', maxCount: 1 },
+  { name: 'section_image_3', maxCount: 1 },
+  { name: 'section_image_4', maxCount: 1 },
+  { name: 'section_image_5', maxCount: 1 }
+]);
+
 // Experience Routes
 router.post(
-    '/',
-    isAuthenticated,
-    restrictTo('admin'),
-    uploadExperienceArray([
-      { name: 'images', maxCount: 10 },
-      { name: 'section_image_1', maxCount: 1 },
-      { name: 'section_image_2', maxCount: 1 },
-      { name: 'section_image_3', maxCount: 1 },
-      { name: 'section_image_4', maxCount: 1 },
-      { name: 'section_image_5', maxCount: 1 }
-    ]),
-    experienceController.createExperience
-  );
+  '/',
+  isAuthenticated,
+  restrictTo('admin'),
+  experienceUpload,
+  experienceController.createExperience
+);
   
 router.get('/', experienceController.getAllExperiences);
 router.get('/featured', experienceController.getFeaturedExperiences);
 router.get('/category/:categoryId', experienceController.getExperiencesByCategory);
 router.get('/:id', experienceController.getExperienceById);
 router.get('/slug/:slug', experienceController.getExperienceBySlug);
+
 router.patch(
   '/:id',
   isAuthenticated,
   restrictTo('admin'),
+  experienceUpload, 
   experienceController.updateExperience
 );
+
 router.delete(
   '/:id',
   isAuthenticated,

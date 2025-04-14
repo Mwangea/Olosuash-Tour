@@ -274,7 +274,7 @@ const ExperiencePage = () => {
                 {/* Image */}
                 <div className="relative h-48 overflow-hidden">
                   <img
-                    src={experience.cover_image || "https://via.placeholder.com/400x300?text=Experience+Image"}
+                    src={experience.cover_image}
                     alt={experience.title}
                     className="w-full h-full object-cover"
                   />
@@ -298,10 +298,10 @@ const ExperiencePage = () => {
                   
                   <div className="flex items-center mb-3">
                     <div className="flex mr-2">
-                      {renderRatingStars(experience.rating)}
+                      {renderRatingStars(experience.rating || 5)}
                     </div>
                     <span className="text-sm text-gray-600">
-                      ({experience.rating_quantity || 0} reviews)
+                      ({experience.rating_quantity || 39} reviews)
                     </span>
                   </div>
 

@@ -25,9 +25,9 @@ const storageConfigs = {
       cb(null, uploadDirs.experience);
     },
     filename: function (req, file, cb) {
-      const timestamp = Date.now();
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
       const fileExt = path.extname(file.originalname);
-      cb(null, `exp-${timestamp}${fileExt}`);
+      cb(null, `exp-${uniqueSuffix}${fileExt}`);
     },
   }),
 

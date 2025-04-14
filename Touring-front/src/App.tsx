@@ -45,6 +45,8 @@ import CreateExperience from './admin/components/CreateExperience';
 import EditExperience from './admin/components/EditExperience';
 import ExperienceSlugPage from './TourPages/ExperienceSlugPage';
 import ExperiencePage from './pages/ExperiencePage';
+import EquipmentRental from './pages/EquipmentRental';
+import MountainClimbingGuide from './pages/MountainClimbingGuide';
 
 // Create a User Layout component with Header and Footer
 const UserLayout = ({ children }: { children: React.ReactNode }) => {
@@ -142,6 +144,10 @@ function App() {
             <Route path='travel-info/packing' element={<UserLayout><PackagingList /></UserLayout>} />
             <Route path='travel-info/visa' element={<UserLayout><VisaRequirements /></UserLayout>} />
             <Route path="/booking-success" element={<UserLayout><BookingSuccess /></UserLayout>} />
+            <Route path="/mountain-climbing/equipment" element={<UserLayout><EquipmentRental /></UserLayout>} />
+            <Route path="/mountain-climbing/preparation" element={<UserLayout><MountainClimbingGuide /></UserLayout>} />
+
+
 
             
          

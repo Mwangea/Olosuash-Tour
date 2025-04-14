@@ -194,11 +194,13 @@ const EditExperience = () => {
     if (!e.target.files || !e.target.files[0]) return;
     const file = e.target.files[0];
   
+    // Store the file with the correct section number (1-5)
     setNewSectionImages((prev) => ({
       ...prev,
       [sectionIndex]: file,
     }));
   
+    // Update preview
     const previewUrl = URL.createObjectURL(file);
     setSections((prev) =>
       prev.map((section, idx) =>
@@ -272,55 +274,47 @@ const EditExperience = () => {
     try {
       const formDataToSend = new FormData();
   
-      // Append all form data
+      // Append all basic fields
       Object.entries(formData).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          formDataToSend.append(key, value.toString());
-        }
+        formDataToSend.append(key, String(value));
       });
   
-      // Append new images
-      newImages.forEach((file, index) => {
-        formDataToSend.append("images", file);
-        if (imagePreviews[index]?.isCover) {
-          formDataToSend.append("cover_image_index", index.toString());
-        }
+      // Append images
+      newImages.forEach((file) => {
+        formDataToSend.append('images', file);
       });
   
-      // Append existing cover image if no new cover is selected
-      if (coverImageId && newImages.length === 0) {
-        formDataToSend.append("cover_image_id", coverImageId);
+      // Append cover image selection
+      if (coverImageId) {
+        formDataToSend.append('cover_image_id', coverImageId);
       }
   
-      // Append sections data
+      // Append sections (1-5)
       sections.forEach((section, index) => {
-        formDataToSend.append(`sections[${index}][id]`, section.id);
-        formDataToSend.append(`sections[${index}][title]`, section.title);
-        formDataToSend.append(`sections[${index}][description]`, section.description);
-        formDataToSend.append(`sections[${index}][order]`, section.order.toString());
-  
-        // Handle section images
+        const sectionNum = index + 1;
+        formDataToSend.append(`section_title_${sectionNum}`, section.title);
+        formDataToSend.append(`section_description_${sectionNum}`, section.description);
+        
+        // Append section image if exists
         if (newSectionImages[index]) {
-          formDataToSend.append(`section_images[${index}]`, newSectionImages[index]);
-        } else if (section.existing_image) {
-          formDataToSend.append(`sections[${index}][existing_image]`, section.existing_image);
+          formDataToSend.append(`section_image_${sectionNum}`, newSectionImages[index]);
         }
       });
   
       await api.patch(`/experiences/${id}`, formDataToSend, {
         headers: {
-          "Content-Type": "multipart/form-data",
+          'Content-Type': 'multipart/form-data',
         },
       });
   
-      toast.success("Experience updated successfully!");
-      navigate("/admin/experience");
+      toast.success('Experience updated successfully!');
+      navigate('/admin/experience');
     } catch (error: any) {
-      console.error("Error updating experience:", error);
+      console.error('Update error:', error);
       toast.error(
         error.response?.data?.message ||
           error.message ||
-          "Failed to update experience"
+          'Failed to update experience'
       );
     } finally {
       setSaving(false);

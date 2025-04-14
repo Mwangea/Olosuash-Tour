@@ -3,7 +3,7 @@ const { AppError } = require('../middleware/errorHandler');
 const fs = require('fs');
 const path = require('path');
 const emailService = require('../services/emailExService');
-
+const slugify = require('slugify');
 /**
  * Format experience response with calculated prices
  */
@@ -301,101 +301,71 @@ const getExperienceBySlug = async (req, res, next) => {
 const updateExperience = async (req, res, next) => {
     try {
       const experienceId = req.params.id;
-      const formData = req.body;
       
-      // Convert form data to proper format
-      const experienceData = {
-        title: formData.title,
-        category_id: formData.category_id,
-        short_description: formData.short_description,
-        description: formData.description,
-        duration: formData.duration,
-        price: formData.price,
-        discount_price: formData.discount_price || null,
-        min_group_size: formData.min_group_size,
-        max_group_size: formData.max_group_size,
-        difficulty: formData.difficulty,
-        is_featured: formData.is_featured === 'true',
-        is_active: formData.is_active === 'true'
-      };
-  
+      // Log received data for debugging
+      console.log("Body:", req.body);
+      console.log("Files:", req.files);
+
       // First update the basic experience info
+      const experienceData = {
+        title: req.body.title,
+        category_id: req.body.category_id,
+        short_description: req.body.short_description,
+        description: req.body.description,
+        duration: req.body.duration,
+        price: req.body.price,
+        discount_price: req.body.discount_price || null,
+        min_group_size: req.body.min_group_size,
+        max_group_size: req.body.max_group_size,
+        difficulty: req.body.difficulty,
+        is_featured: req.body.is_featured === 'true',
+       // is_active: req.body.is_active === 'true'
+      };
+
+      // Update slug if title changed
+      if (experienceData.title) {
+        experienceData.slug = slugify(experienceData.title, { lower: true });
+      }
+
       let experience = await Experience.updateExperience(experienceId, experienceData);
       
       // Handle images if any were uploaded
       if (req.files?.images) {
-        // Add new images
         const images = Array.isArray(req.files.images) ? req.files.images : [req.files.images];
         
-        for (const [index, file] of images.entries()) {
-          const isCover = index === (parseInt(formData.cover_image_index) || 0);
+        for (const file of images) {
           await Experience.addExperienceImage(
             experienceId,
             `/uploads/experience-images/${file.filename}`,
-            isCover
+            false // Don't set as cover by default
           );
         }
       }
-  
-      // Handle cover image from existing images if specified
-      if (formData.cover_image_id) {
-        await Experience.setExperienceImageAsCover(experienceId, formData.cover_image_id);
+
+      // Handle cover image selection
+      if (req.body.cover_image_id) {
+        await Experience.setExperienceImageAsCover(experienceId, req.body.cover_image_id);
       }
-  
-      // Handle sections if any were provided
-      if (formData.sections) {
-        // First, get existing sections to know which to delete
-        const existingSections = await Experience.getExperienceSections(experienceId);
-        const existingSectionIds = existingSections.map(s => s.id);
-        const incomingSectionIds = [];
-        
-        // Process each section
-        for (const [index, section] of Object.entries(formData.sections)) {
-          const sectionData = {
-            title: section.title,
-            description: section.description,
-            order: section.order || index,
-            image_path: null
-          };
-  
-          // Handle section image
-          if (req.files?.[`section_images[${index}]`]) {
-            const file = req.files[`section_images[${index}]`][0];
-            sectionData.image_path = `/uploads/experience-images/${file.filename}`;
-          } else if (section.existing_image) {
-            sectionData.image_path = section.existing_image;
-          }
-  
-          // Update or insert section
-          if (section.id && section.id.startsWith('existing-')) {
-            const sectionId = section.id.replace('existing-', '');
-            incomingSectionIds.push(sectionId);
-            await Experience.updateExperienceSection(
-              sectionId,
-              sectionData.title,
-              sectionData.description,
-              sectionData.image_path,
-              sectionData.order
-            );
-          } else {
-            // New section
-            await Experience.addExperienceSection(
-              experienceId,
-              sectionData.title,
-              sectionData.description,
-              sectionData.image_path,
-              sectionData.order
-            );
-          }
-        }
-  
-        // Delete sections that were removed
-        const sectionsToDelete = existingSectionIds.filter(id => !incomingSectionIds.includes(id));
-        if (sectionsToDelete.length > 0) {
-          await Experience.deleteExperienceSections(sectionsToDelete);
+
+      // Handle sections (1-5)
+      for (let i = 1; i <= 5; i++) {
+        if (req.body[`section_title_${i}`] || req.body[`section_description_${i}`]) {
+          const sectionImage = req.files[`section_image_${i}`]?.[0];
+          
+          // First delete existing section if it exists
+          await Experience.deleteExperienceSectionByOrder(experienceId, i);
+          
+          // Then add the new section
+          await Experience.addExperienceSection(
+            experienceId,
+            req.body[`section_title_${i}`],
+            req.body[`section_description_${i}`],
+            sectionImage ? `/uploads/experience-images/${sectionImage.filename}` : null,
+            i
+          );
         }
       }
-  
+
       // Get the updated experience with all relations
       experience = await Experience.getExperienceById(experienceId);
       
@@ -406,18 +376,6 @@ const updateExperience = async (req, res, next) => {
         }
       });
     } catch (error) {
-      // Clean up uploaded files if error occurs
-      if (req.files) {
-        Object.values(req.files).forEach(files => {
-          if (Array.isArray(files)) {
-            files.forEach(file => {
-              fs.unlink(file.path, err => {
-                if (err) console.error('Error deleting file:', err);
-              });
-            });
-          }
-        });
-      }
       next(error);
     }
   };

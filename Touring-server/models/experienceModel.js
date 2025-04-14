@@ -813,27 +813,36 @@ const experienceModel = {
     );
     return rows;
   },
+
+  
    /**
    * Update experience section
    */
-   async updateExperienceSection(sectionId, title, description, imagePath, order) {
+   async updateExperienceSection(sectionId, sectionData) {
     await pool.query(
       `UPDATE experience_sections SET 
         title = ?, description = ?, image_path = ?, section_order = ?
        WHERE id = ?`,
-      [title, description, imagePath, order, sectionId]
+      [
+        sectionData.title,
+        sectionData.description,
+        sectionData.image_path,
+        sectionData.order,
+        sectionId
+      ]
     );
   },
   /**
    * Add experience section
    */
   async addExperienceSection(experienceId, title, description, imagePath, order) {
-    await pool.query(
+    const [result] = await pool.query(
       `INSERT INTO experience_sections 
        (experience_id, title, description, image_path, section_order)
        VALUES (?, ?, ?, ?, ?)`,
       [experienceId, title, description, imagePath, order]
     );
+    return result.insertId;
   },
 
   /**
@@ -843,6 +852,13 @@ const experienceModel = {
     await pool.query(
       'DELETE FROM experience_sections WHERE id IN (?)',
       [sectionIds]
+    );
+  },
+
+  async deleteExperienceSectionByOrder(experienceId, order) {
+    await pool.query(
+      'DELETE FROM experience_sections WHERE experience_id = ? AND section_order = ?',
+      [experienceId, order]
     );
   },
   
