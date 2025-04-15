@@ -47,6 +47,9 @@ import ExperienceSlugPage from './TourPages/ExperienceSlugPage';
 import ExperiencePage from './pages/ExperiencePage';
 import EquipmentRental from './pages/EquipmentRental';
 import MountainClimbingGuide from './pages/MountainClimbingGuide';
+import EasterFamilyPackage from './offer/EasterFamilyPackage';
+import EasterCouplesRetreat from './offer/EasterCouplesRetreat';
+import EasterGroupSafari from './offer/EasterGroupSafari';
 
 // Create a User Layout component with Header and Footer
 const UserLayout = ({ children }: { children: React.ReactNode }) => {
@@ -146,6 +149,10 @@ function App() {
             <Route path="/booking-success" element={<UserLayout><BookingSuccess /></UserLayout>} />
             <Route path="/mountain-climbing/equipment" element={<UserLayout><EquipmentRental /></UserLayout>} />
             <Route path="/mountain-climbing/preparation" element={<UserLayout><MountainClimbingGuide /></UserLayout>} />
+            <Route path="/offers/easter-family" element={<UserLayout><EasterFamilyPackage /></UserLayout>} />
+            <Route path="/offers/easter-couples" element={<UserLayout><EasterCouplesRetreat /></UserLayout>} />
+            <Route path="/offers/easter-group" element={<UserLayout><EasterGroupSafari /></UserLayout>} />
+
 
 
 

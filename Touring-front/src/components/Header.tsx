@@ -228,10 +228,10 @@ const Header = () => {
     },
     {
       name: "Experiences",
-      path: "/experiences",
+      path: "/experience",
       dropdown: [
-        { name: "Customized Africa Safaris", path: "/experiences/customized" },
-        { name: "Hot Air Balloon Safari", path: "/experiences/balloon" },
+        { name: "Customized Africa Safaris", path: "/experience/customized" },
+        { name: "Hot Air Balloon Safari", path: "/experience/balloon" },
         {
           name: "Masai Village Cultural Visit",
           path: "/experiences/masai-village",
