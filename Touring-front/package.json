@@ -135,6 +135,7 @@
     "react-parallax": "^3.5.2",
     "react-refresh": "^0.14.2",
     "react-router-dom": "^6.14.2",
+    "react-scroll-parallax": "^3.4.5",
     "react-share": "^4.4.1",
     "react-slick": "^0.29.0",
     "react-toastify": "^11.0.5",

@@ -40,6 +40,26 @@ const experienceUpload = uploadExperienceArray([
   { name: 'section_image_5', maxCount: 1 }
 ]);
 
+// Booking Routes
+router.post(
+  '/bookings',
+  experienceController.createBooking
+);
+router.get(
+  '/bookings',
+  experienceController.getAllBookings
+);
+router.get(
+  '/bookings/:id',
+  experienceController.getBookingById
+);
+router.patch(
+  '/bookings/:id/status',
+  isAuthenticated,
+  restrictTo('admin'),
+  experienceController.updateBookingStatus
+);
+
 // Experience Routes
 router.post(
   '/',
@@ -91,24 +111,6 @@ router.patch(
   experienceController.setImageAsCover
 );
 
-// Booking Routes
-router.post(
-  '/bookings',
-  experienceController.createBooking
-);
-router.get(
-  '/bookings',
-  experienceController.getAllBookings
-);
-router.get(
-  '/bookings/:id',
-  experienceController.getBookingById
-);
-router.patch(
-  '/bookings/:id/status',
-  isAuthenticated,
-  restrictTo('admin'),
-  experienceController.updateBookingStatus
-);
+
 
 module.exports = router;

@@ -627,38 +627,50 @@ const experienceModel = {
   /**
    * Update booking status
    */
-  async updateBookingStatus(id, status, paymentStatus = null, adminNotes = null) {
-    const connection = await pool.getConnection();
-    try {
-      await connection.beginTransaction();
-      
-      let query = `UPDATE experience_bookings SET status = ?`;
-      const params = [status];
-      
-      if (paymentStatus) {
-        query += `, payment_status = ?`;
-        params.push(paymentStatus);
-      }
-      
-      if (adminNotes) {
-        query += `, admin_notes = ?`;
-        params.push(adminNotes);
-      }
-      
-      query += ` WHERE id = ?`;
-      params.push(id);
-      
-      const [result] = await connection.query(query, params);
-      
-      await connection.commit();
-      return result.affectedRows > 0;
-    } catch (error) {
-      await connection.rollback();
-      throw error;
-    } finally {
-      connection.release();
+  // In experienceModel.js - update updateBookingStatus to return the updated booking
+async updateBookingStatus(id, status, paymentStatus = null, adminNotes = null) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    
+    let query = `UPDATE experience_bookings SET status = ?`;
+    const params = [status];
+    
+    if (paymentStatus) {
+      query += `, payment_status = ?`;
+      params.push(paymentStatus);
     }
-  },
+    
+    if (adminNotes) {
+      query += `, admin_notes = ?`;
+      params.push(adminNotes);
+    }
+    
+    query += ` WHERE id = ?`;
+    params.push(id);
+    
+    const [result] = await connection.query(query, params);
+    
+    if (result.affectedRows === 0) {
+      await connection.rollback();
+      return null;
+    }
+    
+    // Get the updated booking
+    const [booking] = await connection.query(
+      `SELECT * FROM experience_bookings WHERE id = ?`,
+      [id]
+    );
+    
+    await connection.commit();
+    return booking[0]; // Return the updated booking
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+},
 
   /**
    * Get all bookings with optional filtering

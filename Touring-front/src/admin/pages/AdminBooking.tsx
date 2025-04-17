@@ -164,7 +164,7 @@ const AdminBooking = () => {
   };
 
   useEffect(() => {
-    console.log("Fetching bookings..."); // Debug log
+    //console.log("Fetching bookings..."); // Debug log
     fetchBookings().catch((err) => {
       console.error("Uncaught error in fetch:", err);
     });

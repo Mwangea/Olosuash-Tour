@@ -13,7 +13,7 @@ const VisaRequirements = () => {
   const yBg = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
 
   return (
-    <div className="bg-white">
+    <div className="bg-gradient-to-b from-[#F8F4EA] to-[#E9F5FF]">
       {/* Parallax Hero Section */}
       <div ref={ref} className="relative h-[70vh] overflow-hidden">
         <motion.div 

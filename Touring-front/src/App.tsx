@@ -50,6 +50,16 @@ import MountainClimbingGuide from './pages/MountainClimbingGuide';
 import EasterFamilyPackage from './offer/EasterFamilyPackage';
 import EasterCouplesRetreat from './offer/EasterCouplesRetreat';
 import EasterGroupSafari from './offer/EasterGroupSafari';
+import PaymentInformation from './pages/PaymentInfo';
+import AdminExperienceBooking from './admin/pages/AdminExperienceBooking';
+import { BookingExperienceSuccess } from './pages/BookingExperienceSuccess';
+import ExperienceBookings from './pages/ExperienceBookings';
+import ScrollToTopButton from './components/ScrollToTopButton';
+import WhatsAppButton from './components/WhatsAppButton';
+import TreePlanting from './pages/TreePlanting';
+import SGRTrain from './pages/SGRTrain';
+import CustomSafaris from './pages/CustomSafaris';
+
 
 // Create a User Layout component with Header and Footer
 const UserLayout = ({ children }: { children: React.ReactNode }) => {
@@ -122,6 +132,7 @@ function App() {
             <Route path='/admin/users' element={<AdminUser />} />
             <Route path='/admin/tours' element={<AdminTour />} />
             <Route path='/admin/bookings' element={<AdminBooking />} />
+            <Route path='/admin/experience-booking' element={<AdminExperienceBooking />} />
             <Route path="/admin/tours/new" element={<TourForm />} />
             <Route path="/admin/tours/edit/:id" element={<TourForm />} />
             <Route path='/admin/experience' element={<AdminExperiences />} />
@@ -146,15 +157,23 @@ function App() {
             <Route path="/tours/:slug" element={<UserLayout><TourSlugPage /></UserLayout>} />
             <Route path='travel-info/packing' element={<UserLayout><PackagingList /></UserLayout>} />
             <Route path='travel-info/visa' element={<UserLayout><VisaRequirements /></UserLayout>} />
+            <Route path='travel-info/payment' element={<UserLayout><PaymentInformation /></UserLayout>} />
             <Route path="/booking-success" element={<UserLayout><BookingSuccess /></UserLayout>} />
+            <Route path="/booking-experience-success" element={<UserLayout><BookingExperienceSuccess /></UserLayout>} />
             <Route path="/mountain-climbing/equipment" element={<UserLayout><EquipmentRental /></UserLayout>} />
             <Route path="/mountain-climbing/preparation" element={<UserLayout><MountainClimbingGuide /></UserLayout>} />
             <Route path="/offers/easter-family" element={<UserLayout><EasterFamilyPackage /></UserLayout>} />
             <Route path="/offers/easter-couples" element={<UserLayout><EasterCouplesRetreat /></UserLayout>} />
             <Route path="/offers/easter-group" element={<UserLayout><EasterGroupSafari /></UserLayout>} />
+            <Route path="/experience/tree-planting" element={<UserLayout><TreePlanting /></UserLayout>} />
+            <Route path="/experience/train" element={<UserLayout><SGRTrain /></UserLayout>} />
+            <Route path="/experience/customized" element={<UserLayout><CustomSafaris /></UserLayout>} />
 
 
 
+
+
+            
 
             
          
@@ -163,6 +182,7 @@ function App() {
             <Route path="bookings" element={<Bookings />} />
             <Route path="wishlist" element={<Wishlist />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="experience-bookings" element={<ExperienceBookings />} />
             </Route>
 
 
@@ -181,7 +201,8 @@ function App() {
           </BookingProvider>
           </AuthProvider>
         </BrowserRouter>
-      
+      <ScrollToTopButton />
+      <WhatsAppButton />
     </>
   );
 }

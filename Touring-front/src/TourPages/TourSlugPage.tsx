@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { FaStar, FaRegStar, FaMapMarkerAlt, FaHotel, FaCar } from "react-icons/fa";
+import { FaStar, FaRegStar, FaMapMarkerAlt, FaHotel, FaCar, FaHome } from "react-icons/fa";
 import { GiPathDistance, GiElephant } from "react-icons/gi";
 import { IoMdTime } from "react-icons/io";
 import api from "../api/axios";
@@ -189,6 +189,15 @@ const TourSlugPage = () => {
 
   return (
     <div className="py-12 bg-gradient-to-b from-[#F8F4EA] to-[#E9F5FF]">
+      <div className="container mx-auto px-4">
+        <Link 
+          to="/" 
+          className="flex items-center text-[#8B6B3D] hover:text-[#6B4F2D] transition-colors duration-200 mb-4 lg:mb-6"
+        >
+          <FaHome className="mr-2" />
+          <span className="font-medium">Back to Home</span>
+        </Link>
+      </div>
       <div className="container mx-auto px-4">
         {/* Tour Hero Section */}
         <div className="mb-12">

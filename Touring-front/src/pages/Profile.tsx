@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Book, Heart, Settings, User, LogOut } from 'lucide-react';
+import { Book, Heart, User, LogOut } from 'lucide-react';
 import toast from 'react-hot-toast';
 import defaultAvatar from '/default-avatar.jpg';
 import { userApi, UserProfile } from '../api/userApi';
 import ProfileOverview from './ProfileOverview';
 import { useAuth } from '../context/AuthContext';
+import { FaWpexplorer } from 'react-icons/fa';
 
 
 const Profile = () => {
@@ -16,9 +17,11 @@ const Profile = () => {
 
   const navigationProfile = [
     { name: "Profile", link: "/profile", icon: User },
-    { name: "Bookings", link: "/profile/bookings", icon: Book },
+    { name: "Tour Bookings", link: "/profile/bookings", icon: Book },
     { name: "Wishlist", link: "/profile/wishlist", icon: Heart },
-    { name: "Settings", link: "/profile/settings", icon: Settings }
+  //  { name: "Settings", link: "/profile/settings", icon: Settings },
+    { name: "Experience Bookings", link: "/profile/experience-bookings", icon: FaWpexplorer }
+
   ];
 
   useEffect(() => {

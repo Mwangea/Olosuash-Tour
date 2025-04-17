@@ -159,7 +159,7 @@ const Header = () => {
     },
     {
       name: "Kenya Safaris",
-      path: "/kenya-safaris",
+      path: "/tours",
       dropdown: [
         {
           name: "Nairobi Kenya Safaris",
@@ -174,7 +174,7 @@ const Header = () => {
             },
           ],
         },
-        { name: "Masai Mara Kenya Safaris", path: "/kenya-safaris/masai-mara" },
+        { name: "2 Day Masai Mara Kenya Safaris", path: "/tours/2-day-masai-mara-safari-package" },
         { name: "Amboseli Kenya Safaris", path: "/kenya-safaris/amboseli" },
         { name: "Kenya Flight Safaris", path: "/kenya-safaris/flight" },
         {
@@ -211,8 +211,8 @@ const Header = () => {
               path: "/kenya-safaris/diani/day-excursions",
             },
             {
-              name: "Safaris From Diani Beach",
-              path: "/kenya-safaris/diani/safaris",
+              name: "7-Day Diani Beach Tour Package from Nairobi",
+              path: "/tours/7-day-diani-beach-tour-package-from-nairobi",
             },
           ],
         },
@@ -231,23 +231,23 @@ const Header = () => {
       path: "/experience",
       dropdown: [
         { name: "Customized Africa Safaris", path: "/experience/customized" },
-        { name: "Hot Air Balloon Safari", path: "/experience/balloon" },
+        { name: "Hot Air Balloon Safari", path: "/experience/masai-mara-hot-air-balloon-safari-soar-above-the-savannah" },
         {
           name: "Masai Village Cultural Visit",
-          path: "/experiences/masai-village",
+          path: "/experience/masai-village-visit-cultural-safari-experience-in-kenya-and-tanzania",
         },
-        { name: "Nairobi to Mombasa Train", path: "/experiences/train" },
-        { name: "Bush Dining", path: "/experiences/bush-dining" },
-        { name: "Africa Beach Holidays", path: "/experiences/beach" },
-        { name: "Wildebeest Calving Safari", path: "/experiences/calving" },
-        { name: "Great Wildebeest Migration", path: "/experiences/migration" },
-        { name: "Bird Watching Safaris", path: "/experiences/bird-watching" },
-        { name: "Tree Planting", path: "/experiences/tree-planting" },
+        { name: "Nairobi to Mombasa Train", path: "/experience/train" },
+        { name: "Bush Dining", path: "/experience/bush-dining-on-your-african-safari" },
+        { name: "Africa Beach Holidays", path: "/experience/beach" },
+        { name: "Wildebeest Calving Safari", path: "/experience/wild-beest-calving-safari" },
+        { name: "Great Wildebeest Migration", path: "/experience/great-wildebeest-migration-safari-packages-witness-nature's-grandest-show" },
+        { name: "Bird Watching Safaris", path: "/experience/bird-watching-safaris" },
+        { name: "Tree Planting", path: "/experience/tree-planting" },
         { name: "Lion and Rhino Tracking", path: "/experiences/tracking" },
-        { name: "Photographic Safaris", path: "/experiences/photographic" },
-        { name: "Family Safaris", path: "/experiences/family" },
-        { name: "Honeymoon Safaris", path: "/experiences/honeymoon" },
-        { name: "Wellness Safaris", path: "/experiences/wellness" },
+        { name: "Photographic Safaris", path: "/experience/photographic" },
+        { name: "Family Safaris", path: "/experience/family" },
+        { name: "Honeymoon Safaris", path: "experience/honeymoon-safaris-in-kenya-and-tanzania-romance-in-the-wild" },
+        { name: "Wellness Safaris", path: "/experience/wellness-safari-tours-in-kenya-and-tanzania" },
       ],
     },
     {
@@ -270,7 +270,7 @@ const Header = () => {
     },
     {
       name: "Tanzania Safaris",
-      path: "/tanzania-safaris",
+      //path: "/tanzania-safaris",
       dropdown: [
         {
           name: "Serengeti National Park",
@@ -283,15 +283,15 @@ const Header = () => {
     },
     {
       name: "Mountain Climbing",
-      path: "/mountain-climbing",
+      //path: "/mountain-climbing",
       dropdown: [
         {
           name: "Mount Kenya Climbing",
-          path: "/mountain-climbing/mount-kenya",
+          path: "/experience/climb-mount-kenya-an-unforgettable-african-adventure",
         },
         {
           name: "Kilimanjaro Climbing",
-          path: "/mountain-climbing/kilimanjaro",
+          path: "/experience/climb-mount-kilimanjaro-a-journey-to-the-roof-of-africa",
         },
         { name: "Preparation Guide", path: "/mountain-climbing/preparation" },
         { name: "Equipment Rental", path: "/mountain-climbing/equipment" },
@@ -303,6 +303,8 @@ const Header = () => {
       dropdown: [
         { name: "Visa Requirements", path: "/travel-info/visa" },
         { name: "Packing List", path: "/travel-info/packing" },
+        { name: "Payment instructions", path: "/travel-info/payment" },
+
         
       ],
     },
@@ -337,7 +339,7 @@ const Header = () => {
             {navigationItems.map((item) => (
               <div key={item.name} className="relative group">
                 <Link
-                  to={item.path}
+                  to={item.path || ''}
                   className="px-3 py-2 text-sm font-medium text-gray-700 hover:text-[#8B6B3D] transition-colors flex items-center"
                   onMouseEnter={() =>
                     item.dropdown && setActiveDropdown(item.name)

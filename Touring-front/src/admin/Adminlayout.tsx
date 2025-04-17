@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, Transition } from '@headlessui/react';
 import clsx from 'clsx';
 import {
   Users,
-  Map,
   BookOpen,
-  Settings,
   Image,
   Menu as MenuIcon,
   X,
@@ -18,11 +16,10 @@ import {
   ChevronRight,
   LayoutDashboard,
   CassetteTapeIcon,
+  LogOutIcon,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { FaBinoculars } from 'react-icons/fa';
-//import AdminLoadingPage from './AdminLoadingPage';
-
+import { FaBinoculars, FaMap, FaWpexplorer } from 'react-icons/fa';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -31,24 +28,25 @@ interface AdminLayoutProps {
 const navigation = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
   { name: 'Hero Section', href: '/admin/hero', icon: Image },
+  { name: 'Tours', href: '/admin/tours', icon: FaMap },
+  { name: 'Experience', href: '/admin/experience', icon: FaBinoculars },
+  { name: 'Tour Bookings', href: '/admin/bookings', icon: BookOpen },
+  { name: 'Experience Bookings', href: '/admin/experience-booking', icon: FaWpexplorer },
+  { name: 'Categories', href: '/admin/categories', icon: CassetteTapeIcon },
   { name: 'Users', href: '/admin/users', icon: Users },
-  { name: 'Tours', href: '/admin/tours', icon: Map },
-  { name: 'Bookings', href: '/admin/bookings', icon: BookOpen },
-  { name: 'Categories', href:'/admin/categories', icon: CassetteTapeIcon},
-  {name: 'Experience', href: '/admin/experience', icon: FaBinoculars},
-  { name: 'Settings', href: '/admin/settings', icon: Settings },
 ];
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   
   const { user, logout } = useAuth();
 
-
   const handleLogout = () => {
-    logout(); 
+    logout();
+    navigate('/'); // Redirect to login page after logout
   };
 
   return (
@@ -82,7 +80,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             <X className="h-6 w-6" />
           </button>
         </div>
-        <nav className="flex flex-col gap-1 p-4">
+        <nav className="flex flex-col gap-2 p-4">
           {navigation.map((item) => {
             const Icon = item.icon;
             return (
@@ -90,7 +88,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                 key={item.name}
                 to={item.href}
                 className={clsx(
-                  'flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors',
+                  'flex items-center gap-3 px-4 py-4 text-sm font-medium rounded-lg transition-colors',
                   location.pathname === item.href
                     ? 'bg-[#8B4513] text-white'
                     : 'text-[#2D2B2A] hover:bg-[#E8E6E1]'
@@ -101,6 +99,14 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               </Link>
             );
           })}
+          {/* Logout button in mobile sidebar */}
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-4 py-4 text-sm font-medium rounded-lg transition-colors text-red-600 hover:bg-red-50 mt-auto mb-4"
+          >
+            <LogOutIcon className="h-5 w-5" />
+            Logout
+          </button>
         </nav>
       </div>
 
@@ -118,7 +124,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               <span className="text-xl font-semibold text-[#2D2B2A]">Olosuashi Tours</span>
             )}
           </div>
-          <nav className="flex flex-col gap-1 p-4">
+          <nav className="flex flex-col gap-2 p-4 flex-grow">
             {navigation.map((item) => {
               const Icon = item.icon;
               return (
@@ -126,7 +132,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                   key={item.name}
                   to={item.href}
                   className={clsx(
-                    'flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors',
+                    'flex items-center gap-3 px-4 py-4 text-sm font-medium rounded-lg transition-colors',
                     location.pathname === item.href
                       ? 'bg-[#8B4513] text-white'
                       : 'text-[#2D2B2A] hover:bg-[#E8E6E1]'
@@ -137,6 +143,17 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                 </Link>
               );
             })}
+            {/* Logout button in desktop sidebar */}
+            <button
+              onClick={handleLogout}
+              className={clsx(
+                'flex items-center gap-3 px-4 py-4 text-sm font-medium rounded-lg transition-colors text-red-600 hover:bg-red-50 mt-auto',
+                isCollapsed ? 'justify-center' : ''
+              )}
+            >
+              <LogOutIcon className="h-5 w-5 flex-shrink-0" />
+              {!isCollapsed && 'Logout'}
+            </button>
           </nav>
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
@@ -175,15 +192,15 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             {/* Profile dropdown */}
             <Menu as="div" className="relative ml-auto">
               <Menu.Button className="flex items-center gap-3 rounded-lg bg-white p-1.5 text-sm font-medium text-[#2D2B2A] hover:bg-[#F8F7F4] transition-colors">
-              <img
-                src={user?.profile_picture || '/default-avatar.jpg'}
-                alt="Admin Profile"
-                className="h-8 w-8 rounded-full object-cover"
-              />
-              <div className="hidden lg:flex lg:flex-col lg:items-start">
-                <span className="text-[#2D2B2A]">{user?.email}</span>
-                <span className="text-sm text-gray-500">{user?.username || 'Admin'}</span>
-              </div>
+                <img
+                  src={user?.profile_picture || '/default-avatar.jpg'}
+                  alt="Admin Profile"
+                  className="h-8 w-8 rounded-full object-cover"
+                />
+                <div className="hidden lg:flex lg:flex-col lg:items-start">
+                  <span className="text-[#2D2B2A]">{user?.email}</span>
+                  <span className="text-sm text-gray-500">{user?.username || 'Admin'}</span>
+                </div>
                 <ChevronDown className="h-5 w-5 text-gray-400" />
               </Menu.Button>
 

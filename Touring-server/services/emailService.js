@@ -33,7 +33,7 @@ const transporter = nodemailer.createTransport({
 
 // Common email template with branding
 const emailTemplate = (content, settings) => {
-  const companyName = settings?.company_name || 'Olosuash Tours';
+  const companyName = settings?.company_name || 'Olosuashi Tours';
   const companyEmail = settings?.company_email || process.env.BOOKING_EMAIL_USERNAME;
   const companyPhone = settings?.company_phone || '+254 708 414 577';
 
@@ -213,26 +213,25 @@ exports.sendBookingConfirmationEmail = async (booking) => {
 
     // Payment instructions section
     const paymentInstructions = `
-      <div class="payment-instructions">
-        <h3>📝 Payment Instructions</h3>
-        <ol>
-          <li>M-Pesa Paybill: ${settings?.mpesa_paybill || '123456'}</li>
-          <li>Account Number: ${booking.id}</li>
-          <li>Amount: USD ${booking.total_price.toLocaleString()}</li>
-          <li>Send payment confirmation to WhatsApp: ${settings?.company_phone || '+254786027589'}</li>
-          <li>Or pay cash at our office</li>
-        </ol>
-        
-        <div class="next-steps">
-          <h3>🔔 Next Steps</h3>
-          <ul>
-            <li>Complete payment within 24 hours</li>
-            <li>Send payment confirmation to our WhatsApp number</li>
-            <li>We'll verify and confirm your booking</li>
-          </ul>
-        </div>
-      </div>
-    `;
+     <div class="payment-instructions">
+    <h3>📝 Payment Instructions</h3>
+    <p>Please visit our payment information page for complete details on how to complete your payment:</p>
+    <div style="text-align: center; margin: 20px 0;">
+      <a href="${process.env.BASE_URL || 'https://www.olosuashtours.com'}/travel-info/payment" class="button">
+        View Payment Instructions
+      </a>
+    </div>
+    
+    <div class="next-steps">
+      <h3>🔔 Next Steps</h3>
+      <ul>
+        <li>Complete payment within 24 hours</li>
+        <li>Send payment confirmation to our WhatsApp number: ${settings?.company_phone || '+254 708 414 577'}</li>
+        <li>We'll verify and confirm your booking</li>
+      </ul>
+    </div>
+  </div>
+`;
 
     const content = `
       <h2>Booking Confirmation</h2>
@@ -312,12 +311,10 @@ exports.sendBookingConfirmationEmail = async (booking) => {
       Status: ${booking.status}
       ${booking.special_requests ? `Special Requests: ${booking.special_requests}` : ''}
       
+      
       📝 Payment Instructions:
-      1. M-Pesa Paybill: ${settings?.mpesa_paybill || '123456'}
-      2. Account Number: ${booking.id}
-      3. Amount: USD ${booking.total_price.toLocaleString()}
-      4. Send payment confirmation to WhatsApp: ${settings?.company_phone || '+254 708 414 577'}
-      5. Or pay cash at our office
+  Please visit our payment information page for complete details:
+  ${process.env.BASE_URL || 'https://www.olosuashtours.com'}/travel-info/payment
       
       🔔 Next Steps:
       - Complete payment within 24 hours

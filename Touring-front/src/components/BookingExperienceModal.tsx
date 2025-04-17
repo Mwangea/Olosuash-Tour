@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { FaUser, FaCalendarAlt, FaPhone, FaEnvelope } from "react-icons/fa";
+import { useNavigate } from "react-router-dom"; // Add this import
 import api from "../api/axios";
-import { toast } from "react-toastify";
+import toast from "react-hot-toast";
 
 interface BookingExperienceModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ const BookingExperienceModal = ({
   experienceTitle,
   pricePerPerson,
 }: BookingExperienceModalProps) => {
+  const navigate = useNavigate(); // Initialize the navigate function
   const [formData, setFormData] = useState({
     full_name: "",
     email: "",
@@ -74,8 +76,9 @@ const BookingExperienceModal = ({
         total_price: totalPrice,
         special_requests: formData.special_requests,
       };
+      
       // Make API call to your booking endpoint
-      await api.post("/experiences/bookings", bookingData);
+      const response = await api.post("/experiences/bookings", bookingData);
 
       // Show success message
       toast.success("Booking submitted successfully! You'll receive a confirmation email shortly.");
@@ -89,6 +92,16 @@ const BookingExperienceModal = ({
         booking_date: "",
         number_of_guests: 1,
         special_requests: "",
+      });
+
+      // Redirect to success page with booking data
+      navigate("/booking-experience-success", {
+        state: {
+          bookingData: response.data, // assuming your API returns the booking data
+          experienceTitle,
+          pricePerPerson,
+          totalPrice,
+        },
       });
     } catch (error) {
       console.error("Booking error:", error);

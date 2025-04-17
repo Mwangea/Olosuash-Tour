@@ -22,25 +22,24 @@ module.exports = {
 
     const paymentInstructions = `
       <div class="payment-instructions">
-        <h3>📝 Payment Instructions</h3>
-        <ol>
-          <li>M-Pesa Paybill: ${settings?.mpesa_paybill || '123456'}</li>
-          <li>Account Number: ${booking.booking_reference}</li>
-          <li>Amount: USD ${booking.total_price.toLocaleString()}</li>
-          <li>Send payment confirmation to WhatsApp: ${settings?.company_phone || '+254786027589'}</li>
-          <li>Or pay cash at our office</li>
-        </ol>
-        
-        <div class="next-steps">
-          <h3>🔔 Next Steps</h3>
-          <ul>
-            <li>Complete payment within 24 hours</li>
-            <li>Send payment confirmation to our WhatsApp number</li>
-            <li>We'll verify and confirm your booking</li>
-          </ul>
-        </div>
-      </div>
-    `;
+    <h3>📝 Payment Instructions</h3>
+    <p>Please visit our payment information page for complete details on how to complete your payment:</p>
+    <div style="text-align: center; margin: 20px 0;">
+      <a href="${process.env.BASE_URL || 'https://www.olosuashtours.com'}/travel-info/payment" class="button">
+        View Payment Instructions
+      </a>
+    </div>
+    
+    <div class="next-steps">
+      <h3>🔔 Next Steps</h3>
+      <ul>
+        <li>Complete payment within 24 hours</li>
+        <li>Send payment confirmation to our WhatsApp number: ${settings?.company_phone || '+254 708 414 577'}</li>
+        <li>We'll verify and confirm your booking</li>
+      </ul>
+    </div>
+  </div>
+`;
 
     return {
       subject: settings?.booking_email_subject || `Booking Confirmation: ${booking.experience_title}`,
@@ -114,11 +113,8 @@ module.exports = {
         ${booking.special_requests ? `Special Requests: ${booking.special_requests}` : ''}
         
         📝 Payment Instructions:
-        1. M-Pesa Paybill: ${settings?.mpesa_paybill || '123456'}
-        2. Account Number: ${booking.booking_reference}
-        3. Amount: USD ${booking.total_price.toLocaleString()}
-        4. Send payment confirmation to WhatsApp: ${settings?.company_phone || '+254 708 414 577'}
-        5. Or pay cash at our office
+  Please visit our payment information page for complete details:
+  ${process.env.BASE_URL || 'https://www.olosuashtours.com'}/travel-info/payment
         
         🔔 Next Steps:
         - Complete payment within 24 hours
@@ -144,7 +140,7 @@ module.exports = {
   getAdminNotificationTemplate(booking, settings) {
     const companyName = settings?.company_name || 'Olosuashi Experiences';
     const formattedDate = format(new Date(booking.booking_date), 'MMMM do, yyyy');
-    const bookingUrl = `${process.env.ADMIN_BASE_URL}/bookings/${booking.id}`;
+    const bookingUrl = `${process.env.BASE_URL}/admin/experience-booking?view=${booking.id}`  || "http://localhost:5173/admin/experience-booking/" ;
 
     return {
       subject: `New Experience Booking: ${booking.experience_title} (Ref: ${booking.booking_reference})`,
@@ -252,6 +248,7 @@ module.exports = {
   getStatusUpdateTemplate(booking, settings) {
     const companyName = settings?.company_name || 'Olosuashi Experiences';
     const formattedDate = format(new Date(booking.booking_date), 'MMMM do, yyyy');
+   // console.log('Template data received:', { booking, settings });
     
     let statusMessage = '';
     let actionSection = '';
@@ -266,7 +263,7 @@ module.exports = {
         `;
         actionSection = `
           <div style="text-align: center; margin: 25px 0;">
-            <a href="https://www.olosuashi.com/prepare-for-experience" class="button">
+            <a href="https://www.olosuashi.com/travel-info/packing" class="button">
               Prepare for Your Experience
             </a>
           </div>
@@ -282,7 +279,7 @@ module.exports = {
         `;
         actionSection = `
           <div style="text-align: center; margin: 25px 0;">
-            <a href="https://www.olosuashi.com/experiences" class="button">
+            <a href="https://www.olosuashi.com/experience" class="button">
               Book Another Experience
             </a>
           </div>

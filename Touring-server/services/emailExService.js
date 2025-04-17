@@ -238,16 +238,27 @@ exports.sendAdminBookingNotificationEmail = async (booking) => {
 // Send booking status update email to user
 exports.sendBookingStatusUpdateEmail = async (booking) => {
   try {
+    //console.log('Attempting to send status update email to:', booking.email);
+    //console.log('Email service config:', {
+    //  host: process.env.BOOKING_EMAIL_OUTGOING_SERVER,
+   //   port: process.env.BOOKING_EMAIL_SMTP_PORT,
+   //   user: process.env.BOOKING_EMAIL_USERNAME
+   // });
     const settings = await getSettings();
     const template = emailTemplates.getStatusUpdateTemplate(booking, settings);
     
-    return sendEmail({
+    //console.log('Email template prepared, sending...');
+    const result = await sendEmail({
       email: booking.email,
       subject: template.subject,
       text: template.text,
       html: emailTemplate(template.html, settings)
     });
+    
+    //console.log('Email sent successfully:', result.messageId);
+    return result;
   } catch (error) {
+    console.error('Error in sendBookingStatusUpdateEmail:', error);
     logger.error(`Error sending booking status email: ${error.message}`);
     throw error;
   }

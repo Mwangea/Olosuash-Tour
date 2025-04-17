@@ -571,24 +571,43 @@ const getBookingById = async (req, res, next) => {
 const updateBookingStatus = async (req, res, next) => {
   try {
     const { status, payment_status, admin_notes } = req.body;
+    
+   // console.log('Updating booking status:', { 
+    //  id: req.params.id, 
+    //  newStatus: status, 
+    //  currentStatus: (await Experience.getBookingById(req.params.id))?.status 
+   // });
+
     const success = await Experience.updateBookingStatus(
       req.params.id,
       status,
       payment_status,
       admin_notes
     );
+    
     if (!success) {
       return next(new AppError('Booking not found', 404));
     }
     
+    // Get fresh booking data after update
     const booking = await Experience.getBookingById(req.params.id);
+   // console.log('Updated booking status:', booking.status);
     
-    // Send status update email to user if status changed
-    if (req.body.status && req.body.status !== booking.status) {
-      await emailService.sendBookingStatusUpdateEmail({
-        ...booking,
-        ...req.body
-      });
+    // Send status update email if status changed
+    if (status && status !== booking.previousStatus) {
+      try {
+       // console.log('Status changed - attempting to send email');
+        await emailService.sendBookingStatusUpdateEmail({
+          ...booking,
+          previousStatus: booking.status, // Track previous status for comparison
+          status: status
+        });
+       // console.log('Status update email sent successfully');
+      } catch (emailError) {
+        console.error('Failed to send status update email:', emailError);
+      }
+    } else {
+      console.log('No status change detected - skipping email');
     }
     
     res.status(200).json({
@@ -598,6 +617,7 @@ const updateBookingStatus = async (req, res, next) => {
       }
     });
   } catch (error) {
+    console.error('Error in updateBookingStatus:', error);
     next(error);
   }
 };
