@@ -6,6 +6,25 @@ import defaultAvatar from "/default-avatar.jpg";
 import { useAuth } from "../context/AuthContext";
 import { userApi } from "../api/userApi";
 
+
+// Function to ensure image URLs are absolute
+const getFullImageUrl = (path: string) => {
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
+
+  // In development, use the proxy path (/uploads)
+  if (process.env.NODE_ENV === "development") {
+    return path.startsWith("/") ? path : `/${path}`;
+  }
+
+  // In production, use the full API domain
+  return `https://api.olosuashi.com${
+    path.startsWith("/") ? path : `/${path}`
+  }`;
+};
+
+
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
@@ -30,10 +49,19 @@ const Header = () => {
         if (token) {
           const userData = localStorage.getItem("user");
           if (userData) {
-            setUser(JSON.parse(userData));
+            const parsedUser = JSON.parse(userData);
+            // Process profile picture URL
+            if (parsedUser.profile_picture) {
+              parsedUser.profile_picture = getFullImageUrl(parsedUser.profile_picture);
+            }
+            setUser(parsedUser);
           } else {
             // Fetch user data if not in localStorage
             const profile = await userApi.getProfile();
+            // Process profile picture URL
+            if (profile.profile_picture) {
+              profile.profile_picture = getFullImageUrl(profile.profile_picture);
+            }
             setUser(profile);
             localStorage.setItem("user", JSON.stringify(profile));
           }

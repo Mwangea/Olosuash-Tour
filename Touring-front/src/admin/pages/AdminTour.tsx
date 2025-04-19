@@ -16,112 +16,27 @@ import api from "../../api/axios";
 import { toast } from "react-hot-toast";
 import AdminLayout from "../Adminlayout";
 import { useNavigate } from "react-router-dom";
+import { ApiError, ApiResponse, Tour } from "../components/AdminTourApi";
 
-interface Tour {
-  id: string;
-  title: string;
-  slug: string;
-  description: string;
-  summary: string;
-  duration: number;
-  maxGroupSize: number;
-  minGroupSize: number;
-  difficulty: string;
-  price: string;
-  price_per_guest: string;
-  discount_price: string | null;
-  rating: string;
-  rating_quantity: number;
-  featured: number;
-  accommodationDetails: string;
-  ratingQuantity?: number;
-  created_at: string;
-  updated_at: string;
-  cover_image: string;
-  images: {
-    id: string;
-    image_path: string;
-    is_cover: boolean;
-  }[];
-  regions: {
-    id: string;
-    name: string;
-  }[];
-  vehicles: {
-    id: string;
-    vehicleType: string;
-    vehicleTypeId: string;
-    capacity: number;
-    isPrimary: boolean;
-  }[];
-  itinerary: {
-    id: string;
-    day: number;
-    title: string;
-    description: string;
-  }[];
-  locations: {
-    id: string;
-    name: string;
-    description: string | null;
-    latitude: number;
-    longitude: number;
-    day: number | null;
-  }[];
-  includedServices: {
-    id: string;
-    name: string;
-    description: string;
-    details: string | null;
-  }[];
-  excludedServices: {
-    id: string;
-    name: string;
-    description: string;
-    details: string | null;
-  }[];
-  availability: {
-    id: string;
-    startDate: string;
-    endDate: string;
-    availableSpots: number;
-  }[];
-  reviews: {
-    id: string;
-    rating: number;
-    review: string;
-    createdAt: string;
-    userId: string;
-    username: string;
-    profilePicture: string;
-  }[];
-  totalPrice?: number;
-  priceDisplay?: string;
-  discountPriceDisplay?: string | null;
-  calculatedForGroupSize?: number;
-}
 
-interface ApiResponse {
-  status: string;
-  pagination: {
-    total: number;
-    totalPages: number;
-    currentPage: number;
-    limit: number;
-  };
-  data: {
-    tours: Tour[];
-  };
-}
 
-interface ApiError {
-  response?: {
-    data?: {
-      message?: string;
-    };
-  };
-  message?: string;
-}
+// Function to ensure image URLs are absolute
+const getFullImageUrl = (path: string) => {
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
+
+  // In development, use the proxy path (/uploads)
+  if (process.env.NODE_ENV === "development") {
+    return path.startsWith("/") ? path : `/${path}`;
+  }
+
+  // In production, use the full API domain
+  return `https://api.olosuashi.com${
+    path.startsWith("/") ? path : `/${path}`
+  }`;
+};
+
 
 const AdminTour = () => {
   const [tours, setTours] = useState<Tour[]>([]);
@@ -155,7 +70,17 @@ const AdminTour = () => {
         },
       });
 
-      setTours(response.data.data.tours || []);
+      // Process image URLs for all tours
+      const processedTours = response.data.data.tours?.map(tour => ({
+        ...tour,
+        cover_image: tour.cover_image ? getFullImageUrl(tour.cover_image) : "",
+        images: tour.images?.map(image => ({
+          ...image,
+          image_path: getFullImageUrl(image.image_path)
+        })) || []
+      })) || [];
+
+      setTours(processedTours);
       setPagination((prev) => ({
         ...prev,
         total: response.data.pagination.total,
@@ -442,23 +367,32 @@ const AdminTour = () => {
                   tours.map((tour) => (
                     <tr key={tour.id} className="hover:bg-gray-50">
                       <td className="px-3 py-3 whitespace-nowrap">
+                        
                         <div className="flex items-center">
-                          {tour.images?.find((img) => img.is_cover) ? (
-                            <div className="flex-shrink-0 h-10 w-10">
-                              <img
-                                className="h-10 w-10 rounded-md object-cover"
-                                src={
-                                  tour.images.find((img) => img.is_cover)
-                                    ?.image_path
-                                }
-                                alt={tour.title}
-                              />
-                            </div>
-                          ) : (
-                            <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-md bg-gray-100">
-                              <FiImage className="text-gray-400" />
-                            </div>
-                          )}
+                  {tour.images?.find((img) => img.is_cover) ? (
+                    <div className="flex-shrink-0 h-10 w-10">
+                      <img
+                        className="h-10 w-10 rounded-md object-cover"
+                        src={
+                          tour.images.find((img) => img.is_cover)
+                            ?.image_path || getFullImageUrl(tour.cover_image)
+                        }
+                        alt={tour.title}
+                      />
+                    </div>
+                  ) : tour.cover_image ? (
+                    <div className="flex-shrink-0 h-10 w-10">
+                      <img
+                        className="h-10 w-10 rounded-md object-cover"
+                        src={getFullImageUrl(tour.cover_image)}
+                        alt={tour.title}
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-md bg-gray-100">
+                      <FiImage className="text-gray-400" />
+                    </div>
+                  )}
                           <div className="ml-3">
                             <div className="text-sm font-medium text-gray-900 line-clamp-1">
                               {tour.title}

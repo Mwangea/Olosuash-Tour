@@ -1,126 +1,259 @@
 <?xml version="1.0" encoding="UTF-8"?>
-    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+            xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
       
     <url>
       <loc>https://olosuashi.com/</loc>
+      <lastmod>2025-04-19T09:20:19.465Z</lastmod>
       <changefreq>weekly</changefreq>
-      <priority>0.8</priority>
+      <priority>1</priority>
+      
+      <image:image>
+        <image:loc>https://olosuashi.com/title-logo.png</image:loc>
+        <image:caption>Homepage of Olosuashi Tours</image:caption>
+      </image:image>
     </url>
-  
-    <url>
-      <loc>https://olosuashi.com/contact</loc>
-      <changefreq>weekly</changefreq>
-      <priority>0.8</priority>
-    </url>
-  
+    
     <url>
       <loc>https://olosuashi.com/about/sustainability</loc>
+      <lastmod>2025-04-19T09:20:19.467Z</lastmod>
       <changefreq>weekly</changefreq>
       <priority>0.8</priority>
+      
+      <image:image>
+        <image:loc>https://olosuashi.com/title-logo.png</image:loc>
+        <image:caption>Our sustainability practices</image:caption>
+      </image:image>
     </url>
-  
+    
     <url>
       <loc>https://olosuashi.com/about/olosuashi-tours</loc>
+      <lastmod>2025-04-19T09:20:19.467Z</lastmod>
       <changefreq>weekly</changefreq>
       <priority>0.8</priority>
+      
+      <image:image>
+        <image:loc>https://olosuashi.com/title-logo.png</image:loc>
+        <image:caption>About our company</image:caption>
+      </image:image>
     </url>
-  
+    
     <url>
       <loc>https://olosuashi.com/about/safari-guide</loc>
+      <lastmod>2025-04-19T09:20:19.467Z</lastmod>
       <changefreq>weekly</changefreq>
       <priority>0.8</priority>
+      
+      <image:image>
+        <image:loc>https://olosuashi.com/title-logo.png</image:loc>
+        <image:caption>Meet our safari guides</image:caption>
+      </image:image>
     </url>
-  
-    <url>
-      <loc>https://olosuashi.com/faq</loc>
-      <changefreq>weekly</changefreq>
-      <priority>0.8</priority>
-    </url>
-  
-    <url>
-      <loc>https://olosuashi.com/tours</loc>
-      <changefreq>weekly</changefreq>
-      <priority>0.8</priority>
-    </url>
-  
-    <url>
-      <loc>https://olosuashi.com/booking-success</loc>
-      <changefreq>weekly</changefreq>
-      <priority>0.8</priority>
-    </url>
-  
+    
     <url>
       <loc>https://olosuashi.com/travel-info/packing</loc>
+      <lastmod>2025-04-19T09:20:19.467Z</lastmod>
       <changefreq>weekly</changefreq>
       <priority>0.8</priority>
+      
+      <image:image>
+        <image:loc>https://olosuashi.com/title-logo.png</image:loc>
+        <image:caption>Packing list for your trip</image:caption>
+      </image:image>
     </url>
-  
+    
     <url>
       <loc>https://olosuashi.com/travel-info/visa</loc>
+      <lastmod>2025-04-19T09:20:19.467Z</lastmod>
       <changefreq>weekly</changefreq>
       <priority>0.8</priority>
+      
+      <image:image>
+        <image:loc>https://olosuashi.com/title-logo.png</image:loc>
+        <image:caption>Visa requirements</image:caption>
+      </image:image>
     </url>
-  
+    
+    <url>
+      <loc>https://olosuashi.com/travel-info/payment</loc>
+      <lastmod>2025-04-19T09:20:19.467Z</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.8</priority>
+      
+      <image:image>
+        <image:loc>https://olosuashi.com/title-logo.png</image:loc>
+        <image:caption>Payment options</image:caption>
+      </image:image>
+    </url>
+    
+    <url>
+      <loc>https://olosuashi.com/experience</loc>
+      <lastmod>2025-04-19T09:20:19.467Z</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.8</priority>
+      
+      <image:image>
+        <image:loc>https://olosuashi.com/title-logo.png</image:loc>
+        <image:caption>All travel experiences</image:caption>
+      </image:image>
+    </url>
+    
+    <url>
+      <loc>https://olosuashi.com/experience/tree-planting</loc>
+      <lastmod>2025-04-19T09:20:19.467Z</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.8</priority>
+      
+      <image:image>
+        <image:loc>https://olosuashi.com/title-logo.png</image:loc>
+        <image:caption>Tree planting experience</image:caption>
+      </image:image>
+    </url>
+    
+    <url>
+      <loc>https://olosuashi.com/experience/train</loc>
+      <lastmod>2025-04-19T09:20:19.467Z</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.8</priority>
+      
+      <image:image>
+        <image:loc>https://olosuashi.com/title-logo.png</image:loc>
+        <image:caption>SGR train experience</image:caption>
+      </image:image>
+    </url>
+    
+    <url>
+      <loc>https://olosuashi.com/experience/customized</loc>
+      <lastmod>2025-04-19T09:20:19.467Z</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.8</priority>
+      
+      <image:image>
+        <image:loc>https://olosuashi.com/title-logo.png</image:loc>
+        <image:caption>Custom safari packages</image:caption>
+      </image:image>
+    </url>
+    
+    <url>
+      <loc>https://olosuashi.com/offers/easter-family</loc>
+      <lastmod>2025-04-19T09:20:19.467Z</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.8</priority>
+      
+      <image:image>
+        <image:loc>https://olosuashi.com/title-logo.png</image:loc>
+        <image:caption>Easter family package</image:caption>
+      </image:image>
+    </url>
+    
+    <url>
+      <loc>https://olosuashi.com/offers/easter-couples</loc>
+      <lastmod>2025-04-19T09:20:19.467Z</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.8</priority>
+      
+      <image:image>
+        <image:loc>https://olosuashi.com/title-logo.png</image:loc>
+        <image:caption>Easter couples retreat</image:caption>
+      </image:image>
+    </url>
+    
+    <url>
+      <loc>https://olosuashi.com/offers/easter-group</loc>
+      <lastmod>2025-04-19T09:20:19.467Z</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.8</priority>
+      
+      <image:image>
+        <image:loc>https://olosuashi.com/title-logo.png</image:loc>
+        <image:caption>Easter group safari</image:caption>
+      </image:image>
+    </url>
+    
+    <url>
+      <loc>https://olosuashi.com/mountain-climbing/equipment</loc>
+      <lastmod>2025-04-19T09:20:19.467Z</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.8</priority>
+      
+      <image:image>
+        <image:loc>https://olosuashi.com/title-logo.png</image:loc>
+        <image:caption>Climbing equipment rental</image:caption>
+      </image:image>
+    </url>
+    
+    <url>
+      <loc>https://olosuashi.com/mountain-climbing/preparation</loc>
+      <lastmod>2025-04-19T09:20:19.467Z</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.8</priority>
+      
+      <image:image>
+        <image:loc>https://olosuashi.com/title-logo.png</image:loc>
+        <image:caption>Mountain climbing guide</image:caption>
+      </image:image>
+    </url>
+    
     <url>
       <loc>https://olosuashi.com/profile</loc>
+      <lastmod>2025-04-19T09:20:19.467Z</lastmod>
       <changefreq>weekly</changefreq>
       <priority>0.8</priority>
+      
+      <image:image>
+        <image:loc>https://olosuashi.com/title-logo.png</image:loc>
+        <image:caption>User profile</image:caption>
+      </image:image>
     </url>
-  
+    
     <url>
       <loc>https://olosuashi.com/profile/bookings</loc>
+      <lastmod>2025-04-19T09:20:19.467Z</lastmod>
       <changefreq>weekly</changefreq>
       <priority>0.8</priority>
+      
+      <image:image>
+        <image:loc>https://olosuashi.com/title-logo.png</image:loc>
+        <image:caption>Your bookings</image:caption>
+      </image:image>
     </url>
-  
+    
+    <url>
+      <loc>https://olosuashi.com/profile/experience-bookings</loc>
+      <lastmod>2025-04-19T09:20:19.467Z</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.8</priority>
+      
+      <image:image>
+        <image:loc>https://olosuashi.com/title-logo.png</image:loc>
+        <image:caption>Your experience bookings</image:caption>
+      </image:image>
+    </url>
+    
     <url>
       <loc>https://olosuashi.com/profile/wishlist</loc>
+      <lastmod>2025-04-19T09:20:19.467Z</lastmod>
       <changefreq>weekly</changefreq>
       <priority>0.8</priority>
+      
+      <image:image>
+        <image:loc>https://olosuashi.com/title-logo.png</image:loc>
+        <image:caption>Your saved items</image:caption>
+      </image:image>
     </url>
-  
+    
     <url>
       <loc>https://olosuashi.com/profile/settings</loc>
+      <lastmod>2025-04-19T09:20:19.467Z</lastmod>
       <changefreq>weekly</changefreq>
       <priority>0.8</priority>
+      
+      <image:image>
+        <image:loc>https://olosuashi.com/title-logo.png</image:loc>
+        <image:caption>Account settings</image:caption>
+      </image:image>
     </url>
-  
-    <url>
-      <loc>https://olosuashi.com/signup</loc>
-      <changefreq>weekly</changefreq>
-      <priority>0.8</priority>
-    </url>
-  
-    <url>
-      <loc>https://olosuashi.com/signin</loc>
-      <changefreq>weekly</changefreq>
-      <priority>0.8</priority>
-    </url>
-  
-    <url>
-      <loc>https://olosuashi.com/forgot-password</loc>
-      <changefreq>weekly</changefreq>
-      <priority>0.8</priority>
-    </url>
-  
-    <url>
-      <loc>https://olosuashi.com/verify-email/success</loc>
-      <changefreq>weekly</changefreq>
-      <priority>0.8</priority>
-    </url>
-  
-    <url>
-      <loc>https://olosuashi.com/verify-email/failed</loc>
-      <changefreq>weekly</changefreq>
-      <priority>0.8</priority>
-    </url>
-  
-    <url>
-      <loc>https://olosuashi.com/unauthorized</loc>
-      <changefreq>weekly</changefreq>
-      <priority>0.8</priority>
-    </url>
-  
+    
       
     </urlset>
   
