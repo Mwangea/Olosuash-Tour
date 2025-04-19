@@ -24,13 +24,21 @@ const FeaturedSection = () => {
 
   // Function to ensure image URLs are absolute
   const getFullImageUrl = (path: string) => {
-    // If the path is already a full URL, return it
-    if (path.startsWith('http://') || path.startsWith('https://')) {
+    if (path.startsWith("http://") || path.startsWith("https://")) {
       return path;
     }
-    // Otherwise, construct the full URL using your API domain
-    return `https://api.olosuashi.com${path.startsWith('/') ? path : `/${path}`}`;
+
+    // In development, use the proxy path (/uploads)
+    if (process.env.NODE_ENV === "development") {
+      return path.startsWith("/") ? path : `/${path}`;
+    }
+
+    // In production, use the full API domain
+    return `https://api.olosuashi.com${
+      path.startsWith("/") ? path : `/${path}`
+    }`;
   };
+
 
   useEffect(() => {
     const fetchFeaturedTours = async () => {

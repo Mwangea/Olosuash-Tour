@@ -252,21 +252,7 @@ const Header = () => {
     },
     {
       name: "Kenya-Tanzania Safaris",
-      path: "/kenya-tanzania-safaris",
-      dropdown: [
-        {
-          name: "Combined Safari Packages",
-          path: "/kenya-tanzania-safaris/packages",
-        },
-        {
-          name: "Border Crossing Info",
-          path: "/kenya-tanzania-safaris/border-info",
-        },
-        {
-          name: "Best Time to Visit",
-          path: "/kenya-tanzania-safaris/best-time",
-        },
-      ],
+      path: "/tours/15-days-best-of-kenya-and-tanzania-safari",
     },
     {
       name: "Tanzania Safaris",

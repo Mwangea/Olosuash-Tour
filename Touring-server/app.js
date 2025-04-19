@@ -86,8 +86,8 @@ app.get('/sitemap.xml', (req, res) => {
 });
 
 // Body parser for JSON and urlencoded
-app.use(express.json({ limit: '10kb' }));
-app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Cookie parser
 app.use(cookieParser());

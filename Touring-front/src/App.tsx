@@ -59,6 +59,8 @@ import WhatsAppButton from './components/WhatsAppButton';
 import TreePlanting from './pages/TreePlanting';
 import SGRTrain from './pages/SGRTrain';
 import CustomSafaris from './pages/CustomSafaris';
+import { ScrollPreserver } from './components/ScrollPreserver';
+import EasterOfferPopup from './components/EasterOfferPopup';
 
 
 // Create a User Layout component with Header and Footer
@@ -87,6 +89,7 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
       <BookingProvider>
+      <ScrollPreserver>
         
           {/* Toast notifications */}
           <Toaster
@@ -198,11 +201,13 @@ function App() {
             {/* Catch-all route */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          </ScrollPreserver>
           </BookingProvider>
           </AuthProvider>
         </BrowserRouter>
       <ScrollToTopButton />
       <WhatsAppButton />
+      <EasterOfferPopup /> 
     </>
   );
 }

@@ -30,6 +30,24 @@ interface Category {
   image_path: string;
 }
 
+// Function to ensure image URLs are absolute
+const getFullImageUrl = (path: string) => {
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
+
+  // In development, use the proxy path (/uploads)
+  if (process.env.NODE_ENV === "development") {
+    return path.startsWith("/") ? path : `/${path}`;
+  }
+
+  // In production, use the full API domain
+  return `https://api.olosuashi.com${
+    path.startsWith("/") ? path : `/${path}`
+  }`;
+};
+
+
 const ExperiencePage = () => {
   const [experiences, setExperiences] = useState<Experience[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -54,7 +72,15 @@ const ExperiencePage = () => {
         
         // Get all categories first
         const categoriesRes = await api.get('/experiences/categories');
-        setCategories(categoriesRes.data.data.categories || []);
+        const categoriesData = categoriesRes.data.data.categories || [];
+        
+        // Process category images
+        const processedCategories = categoriesData.map((category: Category) => ({
+          ...category,
+          image_path: getFullImageUrl(category.image_path)
+        }));
+        
+        setCategories(processedCategories);
 
         // Get experiences with filters
         const categoryId = searchParams.get('category_id');
@@ -67,7 +93,15 @@ const ExperiencePage = () => {
           }${search ? `&search=${search}` : ''}`
         );
 
-        setExperiences(experiencesRes.data.data.experiences || []);
+        const experiencesData = experiencesRes.data.data.experiences || [];
+        
+        // Process experience cover images
+        const processedExperiences = experiencesData.map((experience: Experience) => ({
+          ...experience,
+          cover_image: getFullImageUrl(experience.cover_image)
+        }));
+
+        setExperiences(processedExperiences);
       } catch (err) {
         setError("Failed to load experiences. Please try again later.");
         console.error("Error fetching data:", err);
@@ -78,6 +112,7 @@ const ExperiencePage = () => {
 
     fetchData();
   }, [searchParams]);
+
 
   const handleBookNow = (experience: Experience) => {
     setSelectedExperience({
@@ -274,7 +309,7 @@ const ExperiencePage = () => {
                 {/* Image */}
                 <div className="relative h-48 overflow-hidden">
                   <img
-                    src={experience.cover_image}
+                    src={getFullImageUrl(experience.cover_image)}
                     alt={experience.title}
                     className="w-full h-full object-cover"
                   />
