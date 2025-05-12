@@ -166,6 +166,22 @@ const AdminExperiences = () => {
     </tr>
   );
 
+  // Function to ensure image URLs are absolute
+const getFullImageUrl = (path: string) => {
+  if (!path) return ''; // Handle empty paths
+  
+  // If it's already a full URL, return as-is
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
+
+  // Remove leading slash if present to avoid double slashes
+  const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+
+  // In production, use the production API URL
+  return `https://api.olosuashi.com/${cleanPath}`;
+};
+
   return (
     <AdminLayout>
       <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
@@ -304,7 +320,7 @@ const AdminExperiences = () => {
                             {experience.cover_image ? (
                               <img
                                 className="h-10 w-10 rounded-md object-cover"
-                                src={experience.cover_image}
+                                src={getFullImageUrl(experience.cover_image)}
                                 alt={experience.title}
                               />
                             ) : (

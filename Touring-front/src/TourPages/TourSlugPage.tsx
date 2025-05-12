@@ -89,19 +89,20 @@ const TourSlugPage = () => {
 
   // Function to ensure image URLs are absolute
   const getFullImageUrl = (path: string) => {
+    if (!path) return ''; // handle empty paths
+    
+    // If it's already a full URL, return as-is
     if (path.startsWith("http://") || path.startsWith("https://")) {
       return path;
     }
-
-    // In development, use the proxy path (/uploads)
-    if (process.env.NODE_ENV === "development") {
-      return path.startsWith("/") ? path : `/${path}`;
-    }
-
-    // In production, use the full API domain
-    return `https://api.olosuashi.com${
-      path.startsWith("/") ? path : `/${path}`
-    }`;
+  
+    // Remove any leading slashes and "uploads/" prefix to avoid duplication
+    let cleanPath = path.startsWith('/') ? path.substring(1) : path;
+    // Remove 'uploads/' prefix if it exists to prevent duplication
+    cleanPath = cleanPath.startsWith('uploads/') ? cleanPath.substring(8) : cleanPath;
+  
+    // Always use the production API for images
+    return `https://api.olosuashi.com/uploads/${cleanPath}`;
   };
 
 

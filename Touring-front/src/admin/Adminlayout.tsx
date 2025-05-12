@@ -49,6 +49,22 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     navigate('/'); // Redirect to login page after logout
   };
 
+   // Function to ensure image URLs are absolute
+const getFullImageUrl = (path: string) => {
+  if (!path) return ''; // Handle empty paths
+  
+  // If it's already a full URL, return as-is
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
+
+  // Remove leading slash if present to avoid double slashes
+  const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+
+  // In production, use the production API URL
+  return `https://api.olosuashi.com/${cleanPath}`;
+};
+
   return (
     <div className="min-h-screen bg-[#F8F7F4]">
       {/* Mobile sidebar overlay */}
@@ -193,8 +209,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             <Menu as="div" className="relative ml-auto">
               <Menu.Button className="flex items-center gap-3 rounded-lg bg-white p-1.5 text-sm font-medium text-[#2D2B2A] hover:bg-[#F8F7F4] transition-colors">
                 <img
-                  src={user?.profile_picture || '/default-avatar.jpg'}
-                  alt="Admin Profile"
+                  src={getFullImageUrl(user?.profile_picture || '')}
+                  alt="Admin Profile" 
                   className="h-8 w-8 rounded-full object-cover"
                 />
                 <div className="hidden lg:flex lg:flex-col lg:items-start">

@@ -351,6 +351,23 @@ const EditExperience = () => {
     );
   }
 
+  // Function to ensure image URLs are absolute
+const getFullImageUrl = (path: string) => {
+  if (!path) return ''; // Handle empty paths
+  
+  // If it's already a full URL, return as-is
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
+
+  // Remove leading slash if present to avoid double slashes
+  const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+
+  // In production, use the production API URL
+  return `https://api.olosuashi.com/${cleanPath}`;
+};
+
+
   return (
     <AdminLayout>
       <div className="container mx-auto px-4 py-8">
@@ -680,7 +697,7 @@ const EditExperience = () => {
                     <div key={img.id} className="relative group">
                       <div className="h-32 w-full rounded-md overflow-hidden">
                         <img
-                          src={img.image_path}
+                          src={getFullImageUrl(img.image_path)}
                           alt="Preview"
                           className={`h-full w-full object-cover ${
                             coverImageId === img.id
@@ -866,7 +883,7 @@ const EditExperience = () => {
                       <div className="relative group">
                         <div className="h-32 w-full rounded-md overflow-hidden">
                           <img
-                            src={section.image_path || section.existing_image}
+                            src={section.image_path || getFullImageUrl(section.existing_image || '')}
                             alt="Section preview"
                             className="h-full w-full object-cover"
                           />

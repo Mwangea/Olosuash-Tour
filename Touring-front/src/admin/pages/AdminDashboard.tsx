@@ -133,6 +133,25 @@ const AdminDashboard = () => {
     });
   };
 
+  // Function to ensure image URLs are absolute
+// Function to ensure image URLs are absolute
+const getFullImageUrl = (path: string) => {
+  if (!path) return ''; // Handle empty paths
+  
+  // If it's already a full URL, return as-is
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
+
+  // Remove leading slash if present to avoid double slashes
+  const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+
+  
+
+  // In production, use the production API URL
+  return `https://api.olosuashi.com/${cleanPath}`;
+};
+
   // Format currency
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -335,7 +354,7 @@ const AdminDashboard = () => {
                           {user.profile_picture ? (
                             <img
                               className="h-full w-full object-cover"
-                              src={user.profile_picture}
+                              src={getFullImageUrl(user.profile_picture)}
                               alt={user.username}
                             />
                           ) : (

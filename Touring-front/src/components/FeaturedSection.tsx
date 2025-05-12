@@ -22,23 +22,22 @@ const FeaturedSection = () => {
   } | null>(null);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
-  // Function to ensure image URLs are absolute
   const getFullImageUrl = (path: string) => {
+    if (!path) return ''; // handle empty paths
+    
+    // If it's already a full URL, return as-is
     if (path.startsWith("http://") || path.startsWith("https://")) {
       return path;
     }
-
-    // In development, use the proxy path (/uploads)
-    if (process.env.NODE_ENV === "development") {
-      return path.startsWith("/") ? path : `/${path}`;
-    }
-
-    // In production, use the full API domain
-    return `https://api.olosuashi.com${
-      path.startsWith("/") ? path : `/${path}`
-    }`;
+  
+    // Remove any leading slashes and "uploads/" prefix to avoid duplication
+    let cleanPath = path.startsWith('/') ? path.substring(1) : path;
+    // Remove 'uploads/' prefix if it exists to prevent duplication
+    cleanPath = cleanPath.startsWith('uploads/') ? cleanPath.substring(8) : cleanPath;
+  
+    // Always use the production API for images
+    return `https://api.olosuashi.com/uploads/${cleanPath}`;
   };
-
 
   useEffect(() => {
     const fetchFeaturedTours = async () => {
@@ -152,6 +151,11 @@ const FeaturedSection = () => {
     return stars;
   };
 
+  // Add image error handling
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    e.currentTarget.src = "https://via.placeholder.com/400x300?text=Image+Not+Found";
+  };
+
   if (loading) {
     return (
       <div className="py-16 bg-gradient-to-b from-[#F8F4EA] to-[#E9F5FF]">
@@ -212,10 +216,7 @@ const FeaturedSection = () => {
                         src={currentImage}
                         alt={tour.title}
                         className="w-full h-full object-cover transition-opacity duration-500"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src =
-                            "https://via.placeholder.com/400x300?text=Tour+Image";
-                        }}
+                        onError={handleImageError}
                       />
                       <WishlistIcon
                         tourId={tour.id}

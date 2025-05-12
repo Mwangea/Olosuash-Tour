@@ -21,22 +21,23 @@ import { ApiError, ApiResponse, Tour } from "../components/AdminTourApi";
 
 
 // Function to ensure image URLs are absolute
+// Function to ensure image URLs are absolute
 const getFullImageUrl = (path: string) => {
+  if (!path) return ''; // Handle empty paths
+  
+  // If it's already a full URL, return as-is
   if (path.startsWith("http://") || path.startsWith("https://")) {
     return path;
   }
 
-  // In development, use the proxy path (/uploads)
-  if (process.env.NODE_ENV === "development") {
-    return path.startsWith("/") ? path : `/${path}`;
-  }
+  // Remove leading slash if present to avoid double slashes
+  const cleanPath = path.startsWith('/') ? path.substring(1) : path;
 
-  // In production, use the full API domain
-  return `https://api.olosuashi.com${
-    path.startsWith("/") ? path : `/${path}`
-  }`;
+  
+
+  // In production, use the production API URL
+  return `https://api.olosuashi.com/${cleanPath}`;
 };
-
 
 const AdminTour = () => {
   const [tours, setTours] = useState<Tour[]>([]);

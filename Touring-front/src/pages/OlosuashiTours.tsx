@@ -24,13 +24,7 @@ const AboutPage = () => {
       image: "/ceo.png"
     },
     {
-      name: "Sarah Kyach",
-      role: "Operations Manager and Business consultant ",
-      bio: "Ensures all our tours run smoothly with her exceptional organizational skills and attention to detail.",
-      image: "/sarah.jpg"
-    },
-    {
-      name: "victor solitei",
+      name: "victor Solitei",
       role: "Communication director",
       bio: "Certified safari guide with extensive knowledge of Kenya's wildlife and ecosystems.",
       image: "/comm.jpg"
